@@ -1,3 +1,16 @@
+####Settings####
+innings_all = True
+media_files = True
+game_events = False
+linescore_xml = False
+linescore_json = False
+box_score_xml = False
+box_score_json = False
+event_log = False
+raw_boxscore = False
+batters = False
+pitchers = False
+
 import urllib
 import shutil
 import xml.etree.ElementTree as ET
@@ -10,23 +23,23 @@ def formattedDate(number):
 	else:
 		return str(number)
 
-#returns a list of strings of a days games in the form 
+#returns a list of the URLs that point to files pertaining to all the games in a day
 def getGamesURL(year, month, day):
 	url = "http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" +formattedDate(month) + "/day_" + formattedDate(day) + "/master_scoreboard.xml"
 	(src, inst) = urllib.urlretrieve(url)
 	#dest = "/home/eric/Projects/baseball_database/files"
 	tree = ET.parse(src)
 	root = tree.getroot()
-	games = []
+	baseURLs = []
 	for child in root:
-		games.append("http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" +formattedDate(month) + "/day_" + formattedDate(day) + "/gid_" +str(year) + '_' + formattedDate(month) + '_' + formattedDate(day) + '_' + child.attrib['id'][11:].replace("-", "_") + "/inning/inning_all.xml")
-	return games
+		baseURLs.append("http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" +formattedDate(month) + "/day_" + formattedDate(day) + "/gid_" +str(year) + '_' + formattedDate(month) + '_' + formattedDate(day) + '_' + child.attrib['id'][11:].replace("-", "_"))
+	return baseURLs
 
 
-
-def getFiles():
+#takes range of years as argument, downloads selected files
+def getFiles(years):
 	now = datetime.datetime.now()
-	for year in range(2013,2014):
+	for year in years:
 		for month in range(7,12):
 			for day in range (1, 32):
 				if month in [4,6,9,11] and day == 31:
@@ -35,10 +48,9 @@ def getFiles():
 				if datetime.datetime(now.year, now.month, now.day-1) < datetime.datetime(year, month, day):
 					return
 				gameList = getGamesURL(year, month, day)
-				print str(gameList)
 
 
-getFiles()
+getFiles(range(2007, 2014))
 
 #for i in gamesList:
 #	for x in i:
