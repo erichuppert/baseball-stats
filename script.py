@@ -8,13 +8,14 @@ box_score_xml = False
 box_score_json = False
 event_log = False
 raw_boxscore = False
-batters = False
-pitchers = False
+#batters = False
+#pitchers = False
 
 import urllib
 import shutil
 import xml.etree.ElementTree as ET
 import datetime
+import os
 
 #returns a properly formatted string for date (adds a leading zero to single digit numbers)
 def formattedDate(number):
@@ -48,6 +49,22 @@ def getFiles(years):
 				if datetime.datetime(now.year, now.month, now.day-1) < datetime.datetime(year, month, day):
 					return
 				gameList = getGamesURL(year, month, day)
+				if innings_all:
+					for game in gameList:
+						(src, inst) = urllib.urlretrieve(game + "/inning/inning_all.xml")
+						if not os.path.exists("./files/"+ str(year)):
+							os.makedirs("./files/" + str(year))
+						if not os.path.exists("./files/"+ formattedDate(month)):
+							os.makedirs("./file/s" + formattedDate(month))
+						if not os.path.exists("./files/"+ formattedDate(day)):
+							os.makedirs("./files/" + formattedDate(day))
+						os.rename(src, "./files/" + str(year) + "/" + formattedDate(month) + "/" + formattedDate(day) + "/" + game + ".xml")
+
+
+
+
+
+
 
 
 getFiles(range(2007, 2014))
