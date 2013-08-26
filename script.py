@@ -25,18 +25,16 @@ class Game:
 		self.month = month
 		self.day = day
 		self.id = id
-		self
 		self.baseURL = "http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + id
 		self.localDir = "./files/" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + id
 		if not os.path.exists(self.localDir):
 			os.makedirs(self.localDir)
+		self.gameType = ET.parse(urllib.urlopen(self.baseURL + "/linescore.xml")).getroot().attrib['game_type']
 
-	def gameStatus(self):
-
+	def getStatus(self):
 		tree = ET.parse(urllib.urlopen(self.baseURL + "/linescore.xml"))
 		root = tree.getroot()
 		return root.attrib['status']
-
 
 	def getInningsAll(self):
 		src = self.baseURL + "/inning/inning_all.xml"
@@ -46,7 +44,12 @@ class Game:
 	def getHighlights(self):
 		src = self.baseURL + "/media/highlights.xml"
 		dest = self.localDir + "/highlights.xml"
+		if urllib.urlopen(src).getcode() == 404 and self.year == 2007:
+			print "Highlights are not available for games in 2007"
+		elif urllib.urlopen(src).getcode() == 404:
+			print "HIghlights are not available for this game"
 		urllib.urlretrieve(src, dest)
+
 
 	def getGameEvents(self):
 		src = self.baseURL + "/game_events.xml"
@@ -134,6 +137,17 @@ def getFiles(years):
 				if innings_all:
 					for gameID in gameIDs:
 						getInningsAll(year, month, day, gameID)
+				highlights = True
+				#if game_events:
+				#if linescore_xml:
+				#if linescore_json:
+				#if box_score_xml:
+				#if box_score_json:
+				#if event_log:
+				#if game_log_xml:
+				#if game_log_json:
+				#if raw_boxscore:
+
 
 						#This block of code creates the proper file structure if it does not already exist
 						#if not os.path.exists("./files/"+ str(year)):
