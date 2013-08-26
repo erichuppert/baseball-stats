@@ -12,6 +12,7 @@ game_log_json = False
 raw_boxscore = False
 #batters = False
 #pitchers = False
+downloadDirectory = "/media/eric/EHUPPERT700/SABR/mlb-database"
 
 import urllib
 import shutil
@@ -26,7 +27,7 @@ class Game:
 		self.day = day
 		self.id = id
 		self.baseURL = "http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + id
-		self.localDir = "./files/" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + id
+		self.localDir = downloadDirectory + "/" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + id
 		if not os.path.exists(self.localDir):
 			os.makedirs(self.localDir)
 		self.gameType = ET.parse(urllib.urlopen(self.baseURL + "/linescore.xml")).getroot().attrib['game_type']
@@ -48,7 +49,8 @@ class Game:
 			print "Highlights are not available for games in 2007"
 		elif urllib.urlopen(src).getcode() == 404:
 			print "HIghlights are not available for this game"
-		urllib.urlretrieve(src, dest)
+		else:
+			urllib.urlretrieve(src, dest)
 
 
 	def getGameEvents(self):
@@ -86,6 +88,14 @@ class Game:
 		dest = self.localDir + "/rawboxscore.xml"
 		urllib.urlretrieve(src, dest)
 
+	def getAllFile(self):
+		getInningsAll()
+		getGameEvents()
+		getLinescoreXML()
+		getLinescoreJSON()
+		getEventLog()
+		getRawBoxscore()
+
 #returns a properly formatted string for date (adds a leading zero to single digit numbers)
 def formattedDate(number):
 	if number < 10:
@@ -94,33 +104,16 @@ def formattedDate(number):
 		return str(number)
 
 #returns a list of all game IDs (string) for a given day
-def getGameIDs(year, month, day):
-	url = "http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/master_scoreboard.xml"
-	(src, inst) = urllib.urlretrieve(url)
-	#dest = "/home/eric/Projects/baseball_database/files"
-	tree = ET.parse(src)
+def getGames(year, month, day):
+	masterScoreboardURL = "http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/master_scoreboard.xml"
+	tree = ET.parse(urllib.urlopen(masterScoreboardURL))
 	root = tree.getroot()
-	idList = []
+	gameList = []
 	for child in root:
-		idList.append(child.attrib['id'][11:].replace("-", "_"))
-	return idList
-
-#Downloads the "innings_all.xml" file and places it in the proper game directory
-def getInningsAll(year, month, day, gameID):
-	src = "http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + gameID
-	dest = "./files/" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + gameID + "/innings_all.xml"
-	if not os.path.exists("./files/"+ str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + gameID):
-		os.makedirs("./files/" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + gameID)
-	urllib.urlretrieve(src, dest)
-
-#given a game date and ID, returns a boolean describing if a game is complete
-
-    
-
-#given a game date and ID, returns a string describing the type of game (spring training, regular season, playoffs, or other)
-def gameType():
-        pass
-        
+		id = "gid_" + str(year) + "_" + formattedDate(month) + "_" + formattedDate(day) + "_" + child.attrib['id'][11:].replace("-", "_")
+		print id
+		gameList.append(Game(year, month, day, id))
+	return gameList
 
 #takes range of years as argument, downloads selected files
 def getFiles(years):
@@ -133,11 +126,12 @@ def getFiles(years):
 				#check to make sure you are not downloading future games
 				if datetime.datetime(now.year, now.month, now.day-1) < datetime.datetime(year, month, day):
 					return
-				gameIDs = getGameIDs(year, month, day)
-				if innings_all:
-					for gameID in gameIDs:
-						getInningsAll(year, month, day, gameID)
-				highlights = True
+				games = getGames(year, month, day)
+				for game in games:
+					if innings_all:
+						game.getInningsAll()
+					if highlights:
+						game.getHighlights()
 				#if game_events:
 				#if linescore_xml:
 				#if linescore_json:
@@ -166,7 +160,7 @@ def getFiles(years):
 
 
 
-#getFiles(range(2007, 2014))
+getFiles(range(2007, 2014))
 
 #for i in gamesList:
 #	for x in i:
