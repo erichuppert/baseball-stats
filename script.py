@@ -1,12 +1,14 @@
 ####Settings####
 innings_all = True
-media_files = True
+highlights = True
 game_events = False
 linescore_xml = False
 linescore_json = False
 box_score_xml = False
 box_score_json = False
 event_log = False
+game_log_xml = False
+game_log_json = False
 raw_boxscore = False
 #batters = False
 #pitchers = False
@@ -23,17 +25,25 @@ class Game:
 		self.month = month
 		self.day = day
 		self.id = id
+		self
 		self.baseURL = "http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + id
 		self.localDir = "./files/" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + id
 		if not os.path.exists(self.localDir):
 			os.makedirs(self.localDir)
+
+	def gameStatus(self):
+
+		tree = ET.parse(urllib.urlopen(self.baseURL + "/linescore.xml"))
+		root = tree.getroot()
+		return root.attrib['status']
+
 
 	def getInningsAll(self):
 		src = self.baseURL + "/inning/inning_all.xml"
 		dest = self.localDir + "/innings_all.xml"
 		urllib.urlretrieve(src, dest)
 
-	def getMedia(self):
+	def getHighlights(self):
 		src = self.baseURL + "/media/highlights.xml"
 		dest = self.localDir + "/highlights.xml"
 		urllib.urlretrieve(src, dest)
@@ -68,6 +78,11 @@ class Game:
 		dest = self.localDir + "/eventLog.xml"
 		urllib.urlretrieve(src, dest)
 
+	def getRawBoxscore(self):
+		src = self.baseURL + "/rawboxscore.xml"
+		dest = self.localDir + "/rawboxscore.xml"
+		urllib.urlretrieve(src, dest)
+
 #returns a properly formatted string for date (adds a leading zero to single digit numbers)
 def formattedDate(number):
 	if number < 10:
@@ -96,8 +111,8 @@ def getInningsAll(year, month, day, gameID):
 	urllib.urlretrieve(src, dest)
 
 #given a game date and ID, returns a boolean describing if a game is complete
-def isDone(year, month, day, gameID):
-        pass
+
+    
 
 #given a game date and ID, returns a string describing the type of game (spring training, regular season, playoffs, or other)
 def gameType():
