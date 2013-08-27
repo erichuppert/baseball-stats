@@ -22,79 +22,145 @@ import os
 
 class Game:
 	def __init__(self, year, month, day, id):
+		self.localDir = downloadDirectory + "/" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + id
+		self.baseURL = "http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + id
+		if not os.path.exists(self.localDir) and urllib.urlopen(self.baseURL).getcode() == 404:
+			raise Exception('Cannot find the file for this game in your local directory or on the internet. Check your connection and/or if this game exists.')
 		self.year = year
 		self.month = month
 		self.day = day
 		self.id = id
-		self.baseURL = "http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + id
-		self.localDir = downloadDirectory + "/" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + id
 		if not os.path.exists(self.localDir):
 			os.makedirs(self.localDir)
-		self.gameType = ET.parse(urllib.urlopen(self.baseURL + "/linescore.xml")).getroot().attrib['game_type']
+		if os.path.isfile(self.localDir + "/linescore.xml"):
+			self.linescoreFile = self.localDir + "/linescore.xml"
+		else:
+			self.linescoreFile = self.baseURL + "/linescore.xml"
+		self.innings = int(ET.parse(urllib.urlopen(self.linescoreFile)).getroot().attrib['inning'])
+		self.gameType = ET.parse(urllib.urlopen(self.linescoreFile)).getroot().attrib['game_type']
 
 	def getStatus(self):
-		tree = ET.parse(urllib.urlopen(self.baseURL + "/linescore.xml"))
+		tree = ET.parse(urllib.urlopen(self.linescoreFile))
 		root = tree.getroot()
 		return root.attrib['status']
 
 	def getInningsAll(self):
-		src = self.baseURL + "/inning/inning_all.xml"
 		dest = self.localDir + "/innings_all.xml"
-		urllib.urlretrieve(src, dest)
+		if not os.path.isfile(dest):
+			if self.year <= 2007:
+				out = ""
+				f = open(dest, 'wb')
+				for i in xml_files:
+        			data = ElementTree.parse(urllib.urlopen(i)).getroot()
+       				# print ElementTree.tostring(data)
+        		for result in data.iter('results'):
+            		if xml_element_tree is None:
+                		xml_element_tree = data 
+                		insertion_point = xml_element_tree.findall("./results")[0]
+            		else:
+                		insertion_point.extend(result) 
+   				if xml_element_tree is not None:
+        				print ElementTree.tostring(xml_element_tree)
+				else:
+					src = self.baseURL + "/inning/inning_all.xml"
+					urllib.urlretrieve(src, dest)
+		else:
+			print "innings_all.xml file for " + self.id + " is already downloaded"
 
 	def getHighlights(self):
-		src = self.baseURL + "/media/highlights.xml"
 		dest = self.localDir + "/highlights.xml"
-		if urllib.urlopen(src).getcode() == 404 and self.year == 2007:
-			print "Highlights are not available for games in 2007"
-		elif urllib.urlopen(src).getcode() == 404:
-			print "HIghlights are not available for this game"
+		src = self.baseURL + "/media/highlights.xml"
+		if not os.path.isfile(dest):
+			if self.year <= 2007:
+				print "Highlights are not available for games before 2008"
+			elif urllib.urlopen(src).getcode() == 404:
+				print "Highlights are not available for " + self.id
+			else:
+				urllib.urlretrieve(src, dest)
 		else:
-			urllib.urlretrieve(src, dest)
+			print "highlights.xml file for " + self.id + " is already downloaded"
 
 
 	def getGameEvents(self):
 		src = self.baseURL + "/game_events.xml"
 		dest = self.localDir + "/game_events.xml"
-		urllib.urlretrieve(src, dest)
+		if not os.path.isfile(dest):
+			if self.year == 2007:
+				print "game_events.xml is not available for games before"
+			elif urllib.urlopen(src).getcode() == 404:
+				print "game_events.xml is not available for " + self.id
+			else:
+				urllib.urlretrieve(src, dest)
+		else:
+			"game_events.xml file for " + self.id + " is already downloaded"
 
 	def getLinescoreXML(self):
 		src = self.baseURL + "/linescore.xml"
 		dest = self.localDir + "/linescore.xml"
-		urllib.urlretrieve(src, dest)
+		if urllib.urlopen(src).getcode() == 404:
+			print "linescore.xml is not available for " + self.id
+		elif not os.path.isfile(dest):
+			urllib.urlretrieve(src, dest)
+		else:
+			"linescore.xml for " + self.id + " is already downloaded"
 
 	def getLinescoreJSON(self):
 		src = self.baseURL + "/linescore.json"
-		dest = self.localDir + "/linescore.jspon"
-		urllib.urlretrieve(src, dest)
+		dest = self.localDir + "/linescore.json"
+		if not os.path.isfile(dest):
+			if self.year <= 2007:
+				print "linescore.json is not available for games before 2008"
+			elif urllib.urlopen(src).getcode() == 404:
+				print "linescore.json is not available for " + self.id
+			else:
+				urllib.urlretrieve(src, dest)
+		else:
+			"linescore.json for " + self.id + " is already downloaded"
 
 	def getBoxscoreXML(self):
 		src = self.baseURL + "/boxscore.xml"
 		dest = self.localDir + "/boxscore.xml"
-		urllib.urlretrieve(src, dest)
+		if urllib.urlopen(src).getcode() == 404:
+			print "boxscore.xml is not available for " + self.id
+		elif not os.path.isfile(dest):
+			urllib.urlretrieve(src, dest)
+		else:
+			"boxscore.xml for " + self.id + " is already downloaded"
 
 	def getBoxscoreJSON(self):
 		src = self.baseURL + "/boxscore.json"
 		dest = self.localDir + "/boxscore.json"
-		urllib.urlretrieve(src, dest)
+		if not os.path.isfile(dest):
+			if self.year <= 2011:
+				print "linescore.json is not available for games before 2012"
+			else:
+				urllib.urlretrieve(src, dest)
+		else:
+			"boxscore.json for " + self.id + " is already downloaded"
 
 	def getEventLog(self):
 		src = self.baseURL + "/eventLog.xml"
 		dest = self.localDir + "/eventLog.xml"
-		urllib.urlretrieve(src, dest)
+		if not os.path.isfile(dest):
+			if self.year <= 2006:
+				print "linescore.json is not available for games before 2007"
+			else:
+				urllib.urlretrieve(src, dest)
+		else:
+			"eventLog.xml for " + self.id + " is already downloaded"
 
 	def getRawBoxscore(self):
 		src = self.baseURL + "/rawboxscore.xml"
 		dest = self.localDir + "/rawboxscore.xml"
-		urllib.urlretrieve(src, dest)
-
-	def getAllFile(self):
-		getInningsAll()
-		getGameEvents()
-		getLinescoreXML()
-		getLinescoreJSON()
-		getEventLog()
-		getRawBoxscore()
+		if not os.path.isfile(dest):
+			if self.year <= 2011:
+				print "rawboxscore.xml is not available for games before 2012"
+			elif urllib.urlopen(src).getcode() == 404:
+				print "rawboxscore.xml is not available for " + self.id
+			else:
+				urllib.urlretrieve(src, dest)
+		else:
+			"rawboxscore.xml for " + self.id + " is already downloaded"
 
 #returns a properly formatted string for date (adds a leading zero to single digit numbers)
 def formattedDate(number):
@@ -118,8 +184,10 @@ def getGames(year, month, day):
 #takes range of years as argument, downloads selected files
 def getFiles(years):
 	now = datetime.datetime.now()
+	if 2007 in years or 2006 in years and highlights:
+		print "highlights do not exist for years before 2008"
 	for year in years:
-		for month in range(4,12):
+		for month in range(3,12):
 			for day in range (1, 32):
 				if month in [4,6,9,11] and day == 31:
 					continue
@@ -160,7 +228,7 @@ def getFiles(years):
 
 
 
-getFiles(range(2007, 2014))
+#getFiles(range(2007, 2014))
 
 #for i in gamesList:
 #	for x in i:
