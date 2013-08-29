@@ -12,7 +12,7 @@ game_log_json = False
 raw_boxscore = False
 #batters = False
 #pitchers = False
-downloadDirectory = "/home/eric/Projects/baseball_database/files"
+downloadDirectory = "/media/eric/EHUPPERT700/SABR/mlb-database"
 
 import urllib
 import shutil
@@ -26,7 +26,6 @@ class Game:
 		self.baseURL = "http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + id
 		try:
 			os.path.exists(self.localDir)
-			pass
 		except OSError:
 			if urllib.urlopen(self.baseURL).getcode() == 404:
 				raise Exception('Cannot find the file for this game in your local directory or on the internet. Check your connection and/or if this game exists.')
@@ -40,7 +39,15 @@ class Game:
 			self.linescoreFile = self.localDir + "/linescore.xml"
 		else:
 			self.linescoreFile = self.baseURL + "/linescore.xml"
-		self.innings = int(ET.parse(urllib.urlopen(self.linescoreFile)).getroot().attrib['inning'])
+		gameAttribList = ET.parse(urllib.urlopen(self.linescoreFile)).getroot().attrib
+		if 'inning' in gameAttribList:
+			self.innings = int(gameAttribList['inning'])
+		else:
+			box = urllib.urlopen(self.baseURL + "/boxscore.xml")
+			boxRoot = ET.parse(box).getroot()
+			for i in root.iter():
+				if i.tag == 'inning_line_score':
+					self.innings = int(i.attrib['inning'])	
 		self.gameType = ET.parse(urllib.urlopen(self.linescoreFile)).getroot().attrib['game_type']
 
 	def getStatus(self):
@@ -96,12 +103,12 @@ class Game:
 	def getLinescoreXML(self):
 		src = self.baseURL + "/linescore.xml"
 		dest = self.localDir + "/linescore.xml"
-		if urllib.urlopen(src).getcode() == 404:
-			print "linescore.xml is not available for " + self.id
-		elif not os.path.isfile(dest):
-			urllib.urlretrieve(src, dest)
-		else:
+		if os.path.isfile(dest):
 			"linescore.xml for " + self.id + " is already downloaded"
+		elif urllib.urlopen(src).getcode() == 404:
+			print "linescore.xml is not available for " + self.id
+		else:
+			urllib.urlretrieve(src, dest)
 
 	def getLinescoreJSON(self):
 		src = self.baseURL + "/linescore.json"
@@ -119,12 +126,12 @@ class Game:
 	def getBoxscoreXML(self):
 		src = self.baseURL + "/boxscore.xml"
 		dest = self.localDir + "/boxscore.xml"
-		if urllib.urlopen(src).getcode() == 404:
-			print "boxscore.xml is not available for " + self.id
-		elif not os.path.isfile(dest):
-			urllib.urlretrieve(src, dest)
-		else:
+		if os.path.isfile(dest):
 			"boxscore.xml for " + self.id + " is already downloaded"
+		elif urllib.urlopen(src).getcode() == 404:
+			print "boxscore.xml is not available for " + self.id
+		else:
+			urllib.urlretrieve(src, dest)
 
 	def getBoxscoreJSON(self):
 		src = self.baseURL + "/boxscore.json"
@@ -171,12 +178,15 @@ def formattedDate(number):
 #returns a list of all game IDs (string) for a given day
 def getGames(year, month, day):
 	masterScoreboardURL = "http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/master_scoreboard.xml"
-	tree = ET.parse(urllib.urlopen(masterScoreboardURL))
+	masterScoreboard = urllib.urlopen(masterScoreboardURL)
+	if masterScoreboard.getcode() == 404:
+		print "There is no master scoreboard for " + str(month) + "/" + str(day) + "/" + str(year) + " URL:" + masterScoreboardURL
+	print masterScoreboardURL
+	tree = ET.parse(masterScoreboard)
 	root = tree.getroot()
 	gameList = []
 	for child in root:
 		id = "gid_" + str(year) + "_" + formattedDate(month) + "_" + formattedDate(day) + "_" + child.attrib['id'][11:].replace("-", "_")
-		print id
 		gameList.append(Game(year, month, day, id))
 	return gameList
 
@@ -190,6 +200,10 @@ def getFiles(years):
 			for day in range (1, 32):
 				if month in [4,6,9,11] and day == 31:
 					continue
+				if month == 2 and day in [29, 30, 31] and not (year-2000)%4 == 0:
+					continue
+				if month == 2 and day in [30, 31] and (year-2000)%4 == 0:
+					continue
 				#check to make sure you are not downloading future games
 				if datetime.datetime(now.year, now.month, now.day-1) < datetime.datetime(year, month, day):
 					return
@@ -197,17 +211,22 @@ def getFiles(years):
 				for game in games:
 					if innings_all:
 						game.getInningsAll()
-					if highlights:
+					if highlights and year >= 2008:
 						game.getHighlights()
-				#if game_events:
-				#if linescore_xml:
-				#if linescore_json:
-				#if box_score_xml:
-				#if box_score_json:
-				#if event_log:
-				#if game_log_xml:
-				#if game_log_json:
-				#if raw_boxscore:
+					if game_events and year >= 2008:
+						game.getGameEvents()
+					if linescore_xml:
+						game.getLinescoreXML()
+					if linescore_json and year >= 2007:
+						game.getLinescoreJSON()
+					if box_score_xml:
+						game.getBoxscoreXML()
+					if box_score_json and year >= 2013:
+						game.getBoxscoreJSON()
+					if event_log and year >= 2007:
+						game.getEventLog()
+					if raw_boxscore and year >= 2011:
+						game.getRawBoxscore()
 
 
 						#This block of code creates the proper file structure if it does not already exist
