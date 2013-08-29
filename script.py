@@ -12,7 +12,7 @@ game_log_json = False
 raw_boxscore = False
 #batters = False
 #pitchers = False
-downloadDirectory = "/media/eric/EHUPPERT700/SABR/mlb-database"
+downloadDirectory = "/home/eric/Projects/baseball_database/files"
 
 import urllib
 import shutil
@@ -24,8 +24,12 @@ class Game:
 	def __init__(self, year, month, day, id):
 		self.localDir = downloadDirectory + "/" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + id
 		self.baseURL = "http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/" + id
-		if not os.path.exists(self.localDir) and urllib.urlopen(self.baseURL).getcode() == 404:
-			raise Exception('Cannot find the file for this game in your local directory or on the internet. Check your connection and/or if this game exists.')
+		try:
+			os.path.exists(self.localDir)
+			pass
+		except OSError:
+			if urllib.urlopen(self.baseURL).getcode() == 404:
+				raise Exception('Cannot find the file for this game in your local directory or on the internet. Check your connection and/or if this game exists.')
 		self.year = year
 		self.month = month
 		self.day = day
@@ -48,22 +52,17 @@ class Game:
 		dest = self.localDir + "/innings_all.xml"
 		if not os.path.isfile(dest):
 			if self.year <= 2007:
-				out = ""
-				f = open(dest, 'wb')
-				for i in xml_files:
-        			data = ElementTree.parse(urllib.urlopen(i)).getroot()
-       				# print ElementTree.tostring(data)
-        		for result in data.iter('results'):
-            		if xml_element_tree is None:
-                		xml_element_tree = data 
-                		insertion_point = xml_element_tree.findall("./results")[0]
-            		else:
-                		insertion_point.extend(result) 
-   				if xml_element_tree is not None:
-        				print ElementTree.tostring(xml_element_tree)
-				else:
-					src = self.baseURL + "/inning/inning_all.xml"
-					urllib.urlretrieve(src, dest)
+				outStr = "<game>"
+				for i in range(self.innings):
+					inningURL = self.baseURL + "/inning/inning_" + str(i+1) + ".xml"
+					data = urllib.urlopen(inningURL).read()
+					outStr += data
+				outStr += "</game>"
+				outFile = open(dest, 'wb')
+				outFile.write(outStr)
+			else:
+				src = self.baseURL + "/inning/inning_all.xml"
+				urllib.urlretrieve(src, dest)
 		else:
 			print "innings_all.xml file for " + self.id + " is already downloaded"
 
