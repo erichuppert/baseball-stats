@@ -28,7 +28,6 @@ class Game:
 		self.id = id
 		self.localDir = downloadDirectory + "/" + str(self.year) + "/month_" + formattedDate(self.month) + "/day_" + formattedDate(self.day) + "/" + id
 		self.baseURL = "http://gd2.mlb.com/components/game/mlb/year_" + str(self.year) + "/month_" + formattedDate(self.month) + "/day_" + formattedDate(self.day) + "/" + id
-		print self.baseURL
 		try:
 			os.path.exists(self.localDir)
 		except OSError:
@@ -37,22 +36,27 @@ class Game:
 		if not os.path.exists(self.localDir):
 			os.makedirs(self.localDir)
 		if os.path.isfile(self.localDir + "/linescore.xml"):
-			self.linescoreFile = self.localDir + "/linescore.xml"
+			self.linescoreFile = urllib.urlopen(self.localDir + "/linescore.xml")
 			#print "linescore file is local"
 		else:
-			self.linescoreFile = self.baseURL + "/linescore.xml"
+			self.linescoreFile = urllib.urlopen(self.baseURL + "/linescore.xml")
 			#print "linescore file is on internet"
 			#print self.linescoreFile
-		gameAttribList = ET.parse(urllib.urlopen(self.linescoreFile)).getroot().attrib
+		if self.linescoreFile.getcode() ==404:
+			raise Exception('This game has no linescore file. URL ' + self.baseURL)
+		gameAttribList = ET.parse(self.linescoreFile).getroot().attrib
 		if 'inning' in gameAttribList:
-			self.innings = int(gameAttribList['inning'])
+			try:
+				self.innings = int(gameAttribList['inning'])
+			except:
+				raise Exception('The inning attribute is empty URL: ' + self.baseURL)
 		else:
 			box = urllib.urlopen(self.baseURL + "/boxscore.xml")
 			boxRoot = ET.parse(box).getroot()
 			for i in boxRoot.iter():
 				if i.tag == 'inning_line_score':
 					self.innings = int(i.attrib['inning'])	
-		self.gameType = ET.parse(urllib.urlopen(self.linescoreFile)).getroot().attrib['game_type']
+		self.gameType = gameAttribList['game_type'] 
 
 	def getStatus(self):
 		tree = ET.parse(urllib.urlopen(self.linescoreFile))
@@ -192,7 +196,13 @@ def getGames(year, month, day):
 	gameList = []
 	for child in root:
 		id = "gid_" + str(year) + "_" + formattedDate(month) + "_" + formattedDate(day) + "_" + child.attrib['id'][11:].replace("-", "_")
-		gameList.append(Game(id))
+		print "trying to create Game instance for " + id
+		# gameList.append(Game(id))
+		try:
+			gameList.append(Game(id))
+		except Exception as exc:
+			print exc
+			continue
 	return gameList
 
 #takes range of years as argument, downloads selected files
@@ -208,6 +218,8 @@ def getFiles(years):
 			games = getGames(year, currentDate.month, currentDate.day)
 			for game in games:
 				print game.id
+				if innings_all:
+					print "getting innings all"
 				game.getInningsAll()
 				if highlights and year >= 2008:
 					game.getHighlights()
