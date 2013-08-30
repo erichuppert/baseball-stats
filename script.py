@@ -28,13 +28,14 @@ class Game:
 		self.id = id
 		self.localDir = downloadDirectory + "/" + str(self.year) + "/month_" + formattedDate(self.month) + "/day_" + formattedDate(self.day) + "/" + id
 		self.baseURL = "http://gd2.mlb.com/components/game/mlb/year_" + str(self.year) + "/month_" + formattedDate(self.month) + "/day_" + formattedDate(self.day) + "/" + id
-		#try:
-			#os.path.exists(self.localDir)
-		#except OSError:
-			#if urllib.urlopen(self.baseURL).getcode() == 404:
-				#raise Exception('Cannot find the file for this game in your local directory or on the internet. Check your connection and/or if this game exists.')
-		#if not os.path.exists(self.localDir):
-			#os.makedirs(self.localDir)
+		print self.baseURL
+		try:
+			os.path.exists(self.localDir)
+		except OSError:
+			if urllib.urlopen(self.baseURL).getcode() == 404:
+				raise Exception('Cannot find the file for this game in your local directory or on the internet. Check your connection and/or if this game exists.')
+		if not os.path.exists(self.localDir):
+			os.makedirs(self.localDir)
 		if os.path.isfile(self.localDir + "/linescore.xml"):
 			self.linescoreFile = self.localDir + "/linescore.xml"
 			#print "linescore file is local"
@@ -42,16 +43,16 @@ class Game:
 			self.linescoreFile = self.baseURL + "/linescore.xml"
 			#print "linescore file is on internet"
 			#print self.linescoreFile
-		#gameAttribList = ET.parse(urllib.urlopen(self.linescoreFile)).getroot().attrib
-		#if 'inning' in gameAttribList:
-			#self.innings = int(gameAttribList['inning'])
-		#else:
-			#box = urllib.urlopen(self.baseURL + "/boxscore.xml")
-			#boxRoot = ET.parse(box).getroot()
-			#for i in boxRoot.iter():
-				#if i.tag == 'inning_line_score':
-					#self.innings = int(i.attrib['inning'])	
-		#self.gameType = ET.parse(urllib.urlopen(self.linescoreFile)).getroot().attrib['game_type']
+		gameAttribList = ET.parse(urllib.urlopen(self.linescoreFile)).getroot().attrib
+		if 'inning' in gameAttribList:
+			self.innings = int(gameAttribList['inning'])
+		else:
+			box = urllib.urlopen(self.baseURL + "/boxscore.xml")
+			boxRoot = ET.parse(box).getroot()
+			for i in boxRoot.iter():
+				if i.tag == 'inning_line_score':
+					self.innings = int(i.attrib['inning'])	
+		self.gameType = ET.parse(urllib.urlopen(self.linescoreFile)).getroot().attrib['game_type']
 
 	def getStatus(self):
 		tree = ET.parse(urllib.urlopen(self.linescoreFile))
@@ -206,8 +207,8 @@ def getFiles(years):
 			print currentDate
 			games = getGames(year, currentDate.month, currentDate.day)
 			for game in games:
-				if innings_all:
-					game.getInningsAll()
+				print game.id
+				game.getInningsAll()
 				if highlights and year >= 2008:
 					game.getHighlights()
 				if game_events and year >= 2008:
