@@ -12,6 +12,8 @@ game_log_json = False
 raw_boxscore = False
 #batters = False
 #pitchers = False
+
+#
 downloadDirectory = "/media/eric/EHUPPERT700/SABR/mlb-database"
 
 import urllib
@@ -28,13 +30,14 @@ class Game:
 		self.id = id
 		self.localDir = downloadDirectory + "/" + str(self.year) + "/month_" + formattedDate(self.month) + "/day_" + formattedDate(self.day) + "/" + id
 		self.baseURL = "http://gd2.mlb.com/components/game/mlb/year_" + str(self.year) + "/month_" + formattedDate(self.month) + "/day_" + formattedDate(self.day) + "/" + id
-		try:
-			os.path.exists(self.localDir)
-		except OSError:
-			if urllib.urlopen(self.baseURL).getcode() == 404:
-				raise Exception('Cannot find the file for this game in your local directory or on the internet. Check your connection and/or if this game exists.')
+		
+		#if the game cannot be found in the download directory or on the internet, raise an exception 
+		if not os.path.exists(self.localDir) and urllib.urlopen(self.baseURL).getcode() == 404:
+			raise Exception('Cannot find the file for this game in your local directory or on the internet. Check your connection and/or if this game exists.')
+
 		if not os.path.exists(self.localDir):
 			os.makedirs(self.localDir)
+
 		if os.path.isfile(self.localDir + "/linescore.xml"):
 			self.linescoreFile = urllib.urlopen(self.localDir + "/linescore.xml")
 			#print "linescore file is local"
@@ -219,8 +222,7 @@ def getFiles(years):
 			for game in games:
 				print game.id
 				if innings_all:
-					print "getting innings all"
-				game.getInningsAll()
+					game.getInningsAll()
 				if highlights and year >= 2008:
 					game.getHighlights()
 				if game_events and year >= 2008:
@@ -238,6 +240,13 @@ def getFiles(years):
 				if raw_boxscore and year >= 2011:
 					game.getRawBoxscore()
 			currentDate += datetime.timedelta(days=1)
+
+def update(start = datetime.datetime(2006,3,23), end = datetime.datetime.now()):
+	now = datetime.datetime.now()
+	for year in xrange(end.year, start.year):
+
+
+
 
 def teamCheck(years):
 	teams = []
@@ -272,7 +281,7 @@ def teamCheck(years):
 	return teams
 
 
-getFiles(range(2006, 2014))
+getFiles(range(2012, 2014))
 
 #for i in gamesList:
 #	for x in i:
