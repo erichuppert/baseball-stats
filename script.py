@@ -40,14 +40,17 @@ class Game:
 
 		if os.path.isfile(self.localDir + "/linescore.xml"):
 			self.linescoreFile = urllib.urlopen(self.localDir + "/linescore.xml")
-			#print "linescore file is local"
+
 		else:
 			self.linescoreFile = urllib.urlopen(self.baseURL + "/linescore.xml")
-			#print "linescore file is on internet"
-			#print self.linescoreFile
+
+		
 		if self.linescoreFile.getcode() ==404:
 			raise Exception('This game has no linescore file. URL ' + self.baseURL)
+
+
 		gameAttribList = ET.parse(self.linescoreFile).getroot().attrib
+		
 		if 'inning' in gameAttribList:
 			try:
 				self.innings = int(gameAttribList['inning'])
@@ -61,10 +64,35 @@ class Game:
 					self.innings = int(i.attrib['inning'])	
 		self.gameType = gameAttribList['game_type'] 
 
+
 	def getStatus(self):
 		tree = ET.parse(urllib.urlopen(self.linescoreFile))
 		root = tree.getroot()
 		return root.attrib['status']
+
+	def getAllFiles(self):
+		if self.getStatus() == "Final":
+			if innings_all:
+				self.getInningsAll()
+			if highlights and self.year >= 2008:
+				self.getHighlights()
+			if game_events and self.year >= 2008:
+				self.getGameEvents()
+			if linescore_xml:
+				self.getLinescoreXML()
+			if linescore_json and self.year >= 2007:
+				self.getLinescoreJSON()
+			if box_score_xml:
+				self.getBoxscoreXML()
+			if box_score_json and self.year >= 2013:
+				self.getBoxscoreJSON()
+			if event_log and self.year >= 2007:
+				self.getEventLog()
+			if raw_boxscore and self.year >= 2011:
+				self.getRawBoxscore()
+
+		else:
+			print "This game is in progress or was not scored as an official game; will not get files."
 
 	def getInningsAll(self):
 		dest = self.localDir + "/innings_all.xml"
@@ -186,7 +214,7 @@ def formattedDate(number):
 	else:
 		return str(number)
 
-#returns a list of all game IDs (string) for a given day
+#returns a list of all game objects for a given day
 def getGames(year, month, day):
 	masterScoreboardURL = "http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/master_scoreboard.xml"
 	masterScoreboard = urllib.urlopen(masterScoreboardURL)
@@ -200,9 +228,10 @@ def getGames(year, month, day):
 	for child in root:
 		id = "gid_" + str(year) + "_" + formattedDate(month) + "_" + formattedDate(day) + "_" + child.attrib['id'][11:].replace("-", "_")
 		print "trying to create Game instance for " + id
-		# gameList.append(Game(id))
+		
 		try:
 			gameList.append(Game(id))
+		
 		except Exception as exc:
 			print exc
 			continue
@@ -210,83 +239,55 @@ def getGames(year, month, day):
 
 #takes range of years as argument, downloads selected files
 def getFiles(years):
-	now = datetime.datetime.now()
+	now = datetime.date.today()
 	if 2007 in years or 2006 in years and highlights:
 		print "highlights do not exist for years before 2008"
 	for year in years:
-		currentDate = datetime.datetime(year, 3, 23)
-		endDate = min([now - datetime.timedelta(days=1), datetime.datetime(year, 12, 1)])
+		currentDate = datetime.date(year, 3, 23)
+		endDate = min([now - datetime.timedelta(days=1), datetime.date(year, 12, 1)])
 		while currentDate < endDate:
 			print currentDate
 			games = getGames(year, currentDate.month, currentDate.day)
 			for game in games:
 				print game.id
-				if innings_all:
-					game.getInningsAll()
-				if highlights and year >= 2008:
-					game.getHighlights()
-				if game_events and year >= 2008:
-					game.getGameEvents()
-				if linescore_xml:
-					game.getLinescoreXML()
-				if linescore_json and year >= 2007:
-					game.getLinescoreJSON()
-				if box_score_xml:
-					game.getBoxscoreXML()
-				if box_score_json and year >= 2013:
-					game.getBoxscoreJSON()
-				if event_log and year >= 2007:
-					game.getEventLog()
-				if raw_boxscore and year >= 2011:
-					game.getRawBoxscore()
+				game.getAllFiles()
 			currentDate += datetime.timedelta(days=1)
 
-def update(start = datetime.datetime(2006,3,23), end = datetime.datetime.now()):
-	now = datetime.datetime.now()
-	for year in xrange(end.year, start.year):
+#checks what you already have downloaded and then downloads missing files over given range 
+def update(start = datetime.date(2006,3,23), end = datetime.date.today()):
+	now = datetime.date.today()
+	currentDate = end
+	while not hasAllFiles(getGames(currentDate.year, currentDate.month, currentDate.day)):
+		pass
+
+#check to see if all desired for a list of games has been downloaded. Returns a boolean value.
+def hasAllFiles(games):
+	for game in games:
+		if innings_all and not(os.path.isfile(game.localDir + "/innings_all.xml")):
+			return False
+		if highlights and not(os.path.isfile(game.localDir + "/highlights.xml")):
+			return False
+		if game_events and not(os.path.isfile(game.localDir + "/game_events.xml")):
+			return False
+		if linescore_xml and not(os.path.isfile(game.localDir + "/linescore.xml")):
+			return False
+		if linescore_json and game.year >= 2007 and not(os.path.isfile(game.localDir + "/linescore.json")):
+			return False
+		if box_score_xml and not(os.path.isfile(game.localDir + "/boxscore.xml")):
+			return False
+		if box_score_json and game.year >= 2013 and not (os.path.isfile(game.localDir + "/boxscore.json")):
+			return False
+		if event_log and game.year >= 2007 and not (os.path.isfile(game.localDir + "/eventLog.xml")):
+			return False
+		if raw_boxscore and game.year >= 2011 and not (os.path.isfile(game.localDir + "/rawboxscore.xml")):
+			return False
+		return True
+
+print hasAllFiles(getGames(2010,6,8))
+
+#print Game("gid_2010_06_08_flomlb_phimlb_1")
+
+#getFiles(range(2012, 2014))
 
 
-
-
-def teamCheck(years):
-	teams = []
-	now = datetime.datetime.now()
-	for year in years:
-		currentDate = datetime.datetime(year, 3, 23)
-		endDate = min([now, datetime.datetime(year, 12, 1)])
-		while currentDate < now - datetime.timedelta(days=1) and currentDate < endDate:
-			print currentDate
-			games = getGames(year, currentDate.month, currentDate.day)
-			for game in games:
-				awayCode = None
-				ls = urllib.urlopen(game.linescoreFile)
-				if ls.getcode() == 404:
-					continue
-				gameAttribList = ET.parse(ls).getroot().attrib	
-				if 'away_team_code' in gameAttribList and 'home_team_code' in gameAttribList:
-					awayCode = 'away_team_code'
-					homeCode = 'home_team_code'
-				elif  'away_code' in gameAttribList and 'home_code' in gameAttribList:
-					awayCode = 'away_code'
-					homeCode = 'home_code'
-				if awayCode == None:
-					print game.baseURL
-				if gameAttribList[awayCode] not in teams:
-					teams.append(gameAttribList[awayCode])
-					print "New team (" + gameAttribList[awayCode] + ") added"
-				if gameAttribList[homeCode] not in teams:
-					teams.append(gameAttribList[homeCode])
-					print "New team (" + gameAttribList[homeCode] + ") added"
-			currentDate += datetime.timedelta(days=1)
-	return teams
-
-
-getFiles(range(2012, 2014))
-
-#for i in gamesList:
-#	for x in i:
-#		if "oak" in x:
-#			oakGames += 1
-
-#print "Oakland played " + str(oakGames) + " games"
 
