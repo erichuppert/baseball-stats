@@ -1,9 +1,7 @@
 CREATE TABLE `game` (
   `id` CHAR(32),
   `gameday_link` CHAR(32),
-  `date` DATE NOT NULL,
-  `time` CHAR(6),
-  `ampm` CHAR(2),
+  `datetime` DATETIME NOT NULL,
   `day` CHAR(3),
   `league` CHAR(2),
   `game_type` CHAR(1),
@@ -17,8 +15,6 @@ CREATE TABLE `game` (
   `top_inning` CHAR(1),
   `away_code` CHAR(3),
   `home_code` CHAR(3),
-  `away_file_code` CHAR(8),
-  `home_file_code` CHAR(8),
   `away_team_id` INTEGER,
   `home_team_id` INTEGER,
   `away_name_abbrev` CHAR(3),
@@ -36,10 +32,8 @@ CREATE TABLE `game` (
   `time_zone` CHAR(2),
   `away_team_name` CHAR(16),
   `away_league_id` INTEGER,
-  `away_sport_code` CHAR(3),
   `home_team_name` CHAR(16),
   `home_league_id` INTEGER,
-  `home_sport_code` CHAR(4),
   `away_games_back` FLOAT,
   `home_games_back` FLOAT,
   `home_games_back_wildcard` FLOAT,
@@ -49,54 +43,32 @@ CREATE TABLE `game` (
   `away_team_errors` INTEGER,
   `home_team_errors` INTEGER,
   `away_games_back_wildcard` FLOAT,
-  `home_preview_link` CHAR(32),
+  `home_preview_link` CHAR(100),
   `reason` CHAR(16),
   `tv_station` CHAR(16),
-  `away_preview_link` CHAR(32),
-  `away_time` CHAR(6),
-  `away_time_zone` CHAR(4),
-  `away_ampm` CHAR(2),
-  `home_time` CHAR(6),
-  `home_time_zone` CHAR(4),
-  `home_ampm` CHAR(2),
+  `away_preview_link` CHAR(100),
   `venue_id` INTEGER,
-  `description` CHAR(16),
-  `mlbtv_link` CHAR(32),
-  `wrapup_link` CHAR(32),
-  `resume_date` DATE,
+  `description` CHAR(100),
+  `mlbtv_link` CHAR(100),
+  `wrapup_link` CHAR(100),
+  `resume_date` DATETIME,
   `series` CHAR(16),
-  `series_num` INTEGER,
-  `time_hm_lg` CHAR(6),
-  `hm_lg_ampm` CHAR(2),
-  `tz_hm_lg_gen` CHAR(4),
-  `time_aw_lg` CHAR(6),
-  `aw_lg_ampm` CHAR(2),
-  `tz_aw_lg_gen` CHAR(4),
-  `home_audio_link` CHAR(64),
-  `away_audio_link` CHAR(64),
-  `original_date` DATE,
-  `time_zone_aw_lg` FLOAT,
-  `time_zone_hm_lg` FLOAT,
-  `game_data_directory` CHAR(16),
-  `preview_link` CHAR(64),
-  `ser_home_nbr` INTEGER,
+  `series_num` INTEGER, 
   `ser_games` INTEGER,
-  `postseason_tv_link` CHAR(64)
+  `postseason_tv_link` CHAR(100)
 );
 
 
 
 CREATE TABLE pitch (
-   des CHAR(256),
-   des_en CHAR(256),
+   des CHAR(255),
    id INTEGER,
    type CHAR(1),
-   tfs INTEGER,
-   tfs_zulu TEXT,
+   time DATETIME,
    x FLOAT,
    y FLOAT,
-   cc CHAR(256),
-   mt CHAR(256),
+   cc CHAR(255),
+   mt CHAR(255),
    on_1b INTEGER,
    on_2b INTEGER,
    on_3b INTEGER,
@@ -129,17 +101,16 @@ CREATE TABLE pitch (
    spin_rate FLOAT,
    num INTEGER NOT NULL,
    count CHAR(4) NOT NULL,
-   url CHAR(120) NOT NULL
+   game_id CHAR(32) NOT NULL
 );
 
 CREATE TABLE atbat (
-
+   game_id CHAR(32) NOT NULL,
    num INTEGER NOT NULL,
    b INTEGER,
    s INTEGER,
    o INTEGER,
-   start_tfs INTEGER,
-   start_tfs_zulu CHAR(50),
+   time DATETIME,
    batter INTEGER,
    stand CHAR(1),
    b_height  CHAR(32),
@@ -149,16 +120,9 @@ CREATE TABLE atbat (
    score CHAR(1),
    home_team_runs INTEGER,
    away_team_runs INTEGER,
-   event1 CHAR(128),
-   event2 CHAR(128),
-   event3 CHAR(128),
-   event4 CHAR(128),
-   url CHAR(120) NOT NULL,
-   inning INTEGER,
-   top_inning  CHAR(32),
-   batter_name CHAR(20),
-   pitcher_name CHAR(20)
-
+   event CHAR(128),
+   inning INTEGER NOT NULL,
+   inning_half  CHAR(1) NOT NULL
 );
 
 CREATE TABLE runner (
@@ -170,8 +134,9 @@ CREATE TABLE runner (
         score INTEGER,
         rbi INTEGER,
         earned INTEGER,
-        url CHAR(120) NOT NULL
-        
+        game_id CHAR(32) NOT NULL,
+        inning INTEGER,
+        inning_half  CHAR(1)
 );
 
 CREATE TABLE player (
@@ -186,12 +151,6 @@ CREATE TABLE player (
         status CHAR(1),
         bat_order INTEGER,
         game_position CHAR(2),
-        avg FLOAT,
-        hr INTEGER,
-        rbi INTEGER,
-        wins INTEGER,
-        losses INTEGER,
-        era FLOAT,
         team_abbrev CHAR(3),
         team_id INTEGER,
         parent_team_abbrev CHAR(4),
