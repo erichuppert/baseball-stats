@@ -67,7 +67,6 @@ CREATE TABLE pitch (
    time DATETIME,
    x FLOAT,
    y FLOAT,
-   cc CHAR(255),
    mt CHAR(255),
    on_1b INTEGER,
    on_2b INTEGER,
@@ -99,8 +98,9 @@ CREATE TABLE pitch (
    nasty INTEGER,
    spin_dir FLOAT,
    spin_rate FLOAT,
-   num INTEGER NOT NULL,
-   count CHAR(4) NOT NULL,
+   balls INTEGER,
+   strikes INTEGER,
+   atbat_num INTEGER NOT NULL,
    game_id CHAR(32) NOT NULL
 );
 
@@ -127,16 +127,15 @@ CREATE TABLE atbat (
 
 CREATE TABLE runner (
 
-        id INTEGER,
-        start CHAR(2),
-        end CHAR(2),
-        event CHAR(20),
-        score INTEGER,
-        rbi INTEGER,
-        earned INTEGER,
-        game_id CHAR(32) NOT NULL,
-        inning INTEGER,
-        inning_half  CHAR(1)
+    id INTEGER,
+    start CHAR(2),
+    end CHAR(2),
+    event CHAR(20),
+    score INTEGER,
+    rbi INTEGER,
+    earned INTEGER,
+    game_id CHAR(32) NOT NULL,
+    atbat_num INTEGER
 );
 
 CREATE TABLE player (
@@ -144,19 +143,10 @@ CREATE TABLE player (
         id INTEGER,
         first CHAR(20),
         last CHAR(20),
-        num INTEGER,
-        boxname CHAR(20),
         rl CHAR(1),
         position CHAR(2),
-        status CHAR(1),
-        bat_order INTEGER,
-        game_position CHAR(2),
-        team_abbrev CHAR(3),
-        team_id INTEGER,
-        parent_team_abbrev CHAR(4),
-        parent_team_id INTEGER,
-        url_player CHAR(108) NOT NULL
-        
+        team CHAR(3),
+        team_id INTEGER       
 );
         
   /*CREATE TABLE umpire (
