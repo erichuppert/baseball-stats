@@ -169,4 +169,5 @@ CREATE TABLE player (
           url_player CHAR(108) NOT NULL,
           url CHAR(120) NOT NULL
           
-  );*/
+  );*/Ctrl-C -- exit!
+Ctrl-C -- exit!
