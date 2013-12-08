@@ -110,7 +110,7 @@ CREATE TABLE atbat (
    b_height  CHAR(32),
    pitcher INTEGER,
    p_throws CHAR(1),
-   des  CHAR(200),
+   des  CHAR(255),
    score CHAR(1),
    home_team_runs INTEGER,
    away_team_runs INTEGER,

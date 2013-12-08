@@ -16,7 +16,7 @@ def migrate(directory, db):
 		game = ET.parse(root+'/linescore.xml').getroot()
 		gameAttribs = game.attrib
 		id = gameAttribs.get("id", "null")
-
+		print id
 		#check if the game is already in the database
 		checkSQL = "SELECT id FROM game WHERE id = '%s'"%(id)
 		cursor.execute(checkSQL)
@@ -315,7 +315,7 @@ def migrate(directory, db):
 		date = datetime.datetime.strptime(playerlist.attrib['date'], '%B %d, %Y')
 		teams = [t for t in playerlist.getchildren() if t.tag == 'team']
 		for team in teams:
-			playerteam = teab.attrib['id']
+			playerteam = team.attrib['id']
 			players = [p for p in team.getchildren() if p.tag == 'player']
 			for player in players:
 				playerAttribs = player.attrib
