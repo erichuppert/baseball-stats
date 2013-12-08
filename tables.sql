@@ -125,19 +125,6 @@ CREATE TABLE atbat (
    inning_half  CHAR(1) NOT NULL
 );
 
-CREATE TABLE runner (
-
-    id INTEGER,
-    start CHAR(2),
-    end CHAR(2),
-    event CHAR(20),
-    score INTEGER,
-    rbi INTEGER,
-    earned INTEGER,
-    game_id CHAR(32) NOT NULL,
-    atbat_num INTEGER
-);
-
 CREATE TABLE player (
 
         id INTEGER,

@@ -1,3 +1,6 @@
+from __future__ import print_function
+log = open("/home/eric/Downloads/bbdblog", "w")
+print("test", file = log)
 import os
 import xml.etree.ElementTree as ET
 import MySQLdb
@@ -21,11 +24,14 @@ def migrate(directory, db):
 		checkSQL = "SELECT id FROM game WHERE id = '%s'"%(id)
 		cursor.execute(checkSQL)
 		if cursor.fetchone():
-			print "Game already in database"
+			print("Game already in database")
 		#if game not in databse, get game details and add to 'game' table
 		else: 		
 			gdl = gameAttribs.get("gameday_link", "null")
-			date = gameAttribs["time_date"]
+			if "time_date" in gameAttribs:
+				date = gameAttribs["time_date"]
+			else:
+				date = id[:10] + " " + gameAttribs['time']
 			date = datetime.datetime.strptime(date, '%Y/%m/%d %I:%M')
 			date = date.strftime('%Y-%m-%d %H:%M:%S')
 			day = gameAttribs.get("day", "null")
@@ -128,7 +134,7 @@ def migrate(directory, db):
 				cursor.execute(gameSQL)
 				db.commit()
 			except:
-				print gameSQL
+				print(gameSQL)
 				db.rollback()
 			#end game attributes
 
@@ -147,14 +153,17 @@ def migrate(directory, db):
 						checkSQL = "SELECT num FROM atbat WHERE game_id='%s' and num='%s'"%(id, abnum)
 						cursor.execute(checkSQL)
 						if cursor.fetchall():
-							print "atbat already in database"
+							print("atbat already in database")
 						else:
 							b = atbatAttribs.get('b', 'null')
 							s = atbatAttribs.get('s', 'null')
 							o = atbatAttribs.get('o', 'null')
 							abstfsz = atbatAttribs.get('start_tfs_zulu', 'null')
-							dt = datetime.datetime.strptime(abstfsz, '%Y-%m-%dT%H:%M:%SZ')
-							dt = dt.strftime('%Y-%m-%d %H:%M:%S')
+							if abstfsz != "" and abstfsz != 'null':
+								dt = datetime.datetime.strptime(abstfsz, '%Y-%m-%dT%H:%M:%SZ')
+								dt = dt.strftime('%Y-%m-%d %H:%M:%S')
+							else:
+								dt = 'null'
 							batter = atbatAttribs.get('batter', 'null')
 							stand = atbatAttribs.get('stand', 'null')
 							bheight = atbatAttribs.get('b_height', 'null')
@@ -172,19 +181,19 @@ def migrate(directory, db):
 								away_team_runs, event, inning, inning_half) VALUES ("{0}",
 								"{1}","{2}","{3}","{4}","{5}","{6}","{7}","{8}","{9}",
 								"{10}","{11}","{12}","{13}","{14}","{15}","{16}","{17}")
-								""".format(id, abnum, b, s, o, abstfsz,\
+								""".format(id, abnum, b, s, o, dt,\
 								batter, stand, bheight, pitcher, pthrow, des, \
 								score, htr, atr, event, inning_num, inning_half)
 
 							atbatSQL = atbatSQL.replace('"null"', "null")
 
-							print atbatSQL
+							print(atbatSQL)
 
 							try:
 								cursor.execute(atbatSQL)
 								db.commit()
 							except:
-								print atbatSQL
+								print(atbatSQL)
 								db.rollback()
 								raise
 						events = ievent.getchildren()
@@ -197,18 +206,21 @@ def migrate(directory, db):
 								checkSQL = "SELECT id FROM pitch WHERE game_id='%s' and atbat_num = '%s' and id = '%s'"%(id, abnum, pitchid)
 								cursor.execute(checkSQL)
 								if cursor.fetchone():
-									print "pitch already in database"
+									print("pitch already in database")
 								else:
 									des = pitchAttribs.get('des', 'null')
 									ptype = pitchAttribs.get('type', 'null')
 									abstfsz = pitchAttribs.get('tfs_zulu', 'null')
-									dt = datetime.datetime.strptime(abstfsz, '%Y-%m-%dT%H:%M:%SZ')
-									dt = dt.strftime('%Y-%m-%d %H:%M:%S')
+									if abstfsz != "" and abstfsz == 'null':
+										dt = datetime.datetime.strptime(abstfsz, '%Y-%m-%dT%H:%M:%SZ')
+										dt = dt.strftime('%Y-%m-%d %H:%M:%S')
+									else:
+										dt = 'null'
 									x = pitchAttribs.get('x', 'null')
 									y = pitchAttribs.get('y', 'null')
 									mt = pitchAttribs.get('mt', 'null')
 									if mt:
-										print 'mt not None for pitch', pitchid
+										print('mt not None for pitch', pitchid)
 									first = pitchAttribs.get('on_1b', 'null')
 									second = pitchAttribs.get('on_2b', 'null')
 									third = pitchAttribs.get('on_3b', 'null')
@@ -261,7 +273,7 @@ def migrate(directory, db):
 										cursor.execute(pitchSQL)
 										db.commit()
 									except:
-										print pitchSQL
+										print(pitchSQL)
 										db.rollback()
 										raise
 
@@ -271,7 +283,7 @@ def migrate(directory, db):
 									elif ptype == 'B':
 										balls += 1
 									elif ptype not in "SXB":
-										print 'pitch', str(pitchid), 'from game', str(id), 'has type', str(ptype) 
+										print('pitch', str(pitchid), 'from game', str(id), 'has type', str(ptype)) 
 							# if event.tag == 'runner':
 							# 	#do all of the runner attribute stuff
 							# 	runnerAttribs = event.attrib
@@ -329,7 +341,7 @@ def migrate(directory, db):
 						cursor.execute(playerSQL)
 						db.commit()
 					except:
-						print playerSQL
+						print(playerSQL)
 						db.rollback()
 						raise
 
@@ -338,4 +350,4 @@ def migrate(directory, db):
 
 if __name__ == "__main__":
 	db = MySQLdb.connect("localhost", "baseball", "baseball1", "baseball")
-	migrate('/media/eric/EHUPPERT700/SABR/mlb-database/2013/month_04/day_13', db)
+	migrate('/media/eric/EHUPPERT700/SABR/mlb-database/2008/month_04/day_13', db)
