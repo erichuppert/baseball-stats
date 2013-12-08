@@ -1,12 +1,9 @@
-from __future__ import print_function
-log = open("/home/eric/Downloads/bbdblog", "w")
-print("test", file = log)
 import os
 import xml.etree.ElementTree as ET
 import MySQLdb
 import datetime
 from download import downloadDirectory
-verbose = True
+verbose = False
 
 
 """Handles migration of all files from xml into the MySQLdb. Requires
@@ -24,10 +21,10 @@ def migrate(directory, db):
 		checkSQL = "SELECT id FROM game WHERE id = '%s'"%(id)
 		cursor.execute(checkSQL)
 		if cursor.fetchone():
-			print("Game already in database")
+			#print "Game already in database"
+			pass
 		#if game not in databse, get game details and add to 'game' table
 		else: 		
-			gdl = gameAttribs.get("gameday_link", "null")
 			if "time_date" in gameAttribs:
 				date = gameAttribs["time_date"]
 			else:
@@ -83,14 +80,10 @@ def migrate(directory, db):
 			agbw = gameAttribs.get("away_games_back_wildcard", "null")
 			if agbw == '-':
 				agbw = '0'
-			hpl = gameAttribs.get("home_preview_link", "null")
 			reason = gameAttribs.get("reason", "null")
 			tvs = gameAttribs.get("tv_station", "null")
-			apl = gameAttribs.get("away_preview_link", "null")
 			vid = gameAttribs.get("venue_id", "null")
 			des = gameAttribs.get("description", "null")
-			mtvl = gameAttribs.get("mlbtv_link", "null")
-			wl = gameAttribs.get("wrapup_link", "null")
 			rd = gameAttribs.get("resume_date", "null")
 			if rd != "null":
 				rd = datetime.datetime.strptime(rd, '%Y/%m/%d %I:%M')
@@ -98,9 +91,8 @@ def migrate(directory, db):
 			ser = gameAttribs.get("series", "null")
 			sern = gameAttribs.get("series_num", "null")
 			sg = gameAttribs.get("ser_games", "null")
-			pstv = gameAttribs.get("postseason_tv_link", "null")
 
-			gameSQL = """INSERT INTO game(id, gameday_link, datetime, day,
+			gameSQL = """INSERT INTO game(id, datetime, day,
 			 league, game_type, home_division, away_division, gameday_sw, status,
 				ind, inning, outs, top_inning, away_code, home_code, away_team_id, 
 				home_team_id, away_name_abbrev,
@@ -111,30 +103,29 @@ def migrate(directory, db):
 				away_games_back, home_games_back,
 				home_games_back_wildcard, venue_w_chan_loc, away_team_hits,
 				home_team_hits, away_team_errors, home_team_errors, 
-				away_games_back_wildcard, home_preview_link, reason, 
-				tv_station, away_preview_link, venue_id, description,
-				mlbtv_link, wrapup_link, resume_date, series, series_num,
-				ser_games, postseason_tv_link) 
+				away_games_back_wildcard, reason, 
+				tv_station, venue_id, description, 
+				resume_date, series, series_num, ser_games) 
 				VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}',
 					'{10}','{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}',
 					'{19}','{20}','{21}','{22}','{23}','{24}','{25}','{26}','{27}',
 					'{28}','{29}','{30}','{31}','{32}','{33}','{34}','{35}','{36}',
 					'{37}','{38}','{39}','{40}','{41}','{42}','{43}','{44}','{45}',
-					'{46}','{47}','{48}','{49}','{50}','{51}','{52}','{53}','{54}',
-					'{55}','{56}')""".format(id, gdl, date, day, l,\
+					'{46}','{47}','{48}','{49}','{50}')""".format(id, date, day, l,\
 					gt, hd, ad, gdsw, s, ind, inn, outs, ti, ac, hc, ati, hti, ana,\
 					hna, atc, htc, atr, htr, hw, hl, aw, al, ven, gpk, tz, atn, ali,\
-					htn, hli, agb, hgb, hgbw, vwc, ath, hth, ate, hte, agbw, hpl,\
-					reason, tvs, apl, vid, des, mtvl, wl, rd, ser, sern, sg, pstv)
+					htn, hli, agb, hgb, hgbw, vwc, ath, hth, ate, hte, agbw,\
+					reason, tvs, vid, des, rd, ser, sern, sg)
 
 			#mysql needs null without quotes, this simply removes the extra quotes
 			gameSQL = gameSQL.replace("'null'", "null")
-
+			if verbose:
+				print gameSQL
 			try:
 				cursor.execute(gameSQL)
 				db.commit()
 			except:
-				print(gameSQL)
+				print gameSQL
 				db.rollback()
 			#end game attributes
 
@@ -144,7 +135,10 @@ def migrate(directory, db):
 			inning_num = inning.attrib['num']
 			inning_halves = inning.getchildren()
 			for half in inning_halves:
-				inning_half = half.tag
+				if half.tag == 'bottom':
+					inning_half = 'B'
+				if half.tag == 'top':
+					inning_half = 'T'
 				inningevents = half.getchildren()
 				for ievent in inningevents:
 					if ievent.tag == 'atbat':
@@ -153,7 +147,8 @@ def migrate(directory, db):
 						checkSQL = "SELECT num FROM atbat WHERE game_id='%s' and num='%s'"%(id, abnum)
 						cursor.execute(checkSQL)
 						if cursor.fetchall():
-							print("atbat already in database")
+							print "atbat already in database"
+							pass
 						else:
 							b = atbatAttribs.get('b', 'null')
 							s = atbatAttribs.get('s', 'null')
@@ -187,13 +182,14 @@ def migrate(directory, db):
 
 							atbatSQL = atbatSQL.replace('"null"', "null")
 
-							print(atbatSQL)
+							if verbose:
+								print atbatSQL
 
 							try:
 								cursor.execute(atbatSQL)
 								db.commit()
 							except:
-								print(atbatSQL)
+								print atbatSQL
 								db.rollback()
 								raise
 						events = ievent.getchildren()
@@ -206,7 +202,8 @@ def migrate(directory, db):
 								checkSQL = "SELECT id FROM pitch WHERE game_id='%s' and atbat_num = '%s' and id = '%s'"%(id, abnum, pitchid)
 								cursor.execute(checkSQL)
 								if cursor.fetchone():
-									print("pitch already in database")
+									#print "pitch already in database"
+									pass
 								else:
 									des = pitchAttribs.get('des', 'null')
 									ptype = pitchAttribs.get('type', 'null')
@@ -220,7 +217,7 @@ def migrate(directory, db):
 									y = pitchAttribs.get('y', 'null')
 									mt = pitchAttribs.get('mt', 'null')
 									if mt:
-										print('mt not None for pitch', pitchid)
+										print 'mt not None for pitch', pitchid
 									first = pitchAttribs.get('on_1b', 'null')
 									second = pitchAttribs.get('on_2b', 'null')
 									third = pitchAttribs.get('on_3b', 'null')
@@ -273,7 +270,7 @@ def migrate(directory, db):
 										cursor.execute(pitchSQL)
 										db.commit()
 									except:
-										print(pitchSQL)
+										print pitchSQL
 										db.rollback()
 										raise
 
@@ -283,7 +280,7 @@ def migrate(directory, db):
 									elif ptype == 'B':
 										balls += 1
 									elif ptype not in "SXB":
-										print('pitch', str(pitchid), 'from game', str(id), 'has type', str(ptype)) 
+										print 'pitch', str(pitchid), 'from game', str(id), 'has type', str(ptype)
 							# if event.tag == 'runner':
 							# 	#do all of the runner attribute stuff
 							# 	runnerAttribs = event.attrib
@@ -341,13 +338,11 @@ def migrate(directory, db):
 						cursor.execute(playerSQL)
 						db.commit()
 					except:
-						print(playerSQL)
+						print playerSQL
 						db.rollback()
 						raise
 
 
-
-
 if __name__ == "__main__":
 	db = MySQLdb.connect("localhost", "baseball", "baseball1", "baseball")
-	migrate('/media/eric/EHUPPERT700/SABR/mlb-database/2008/month_04/day_13', db)
+	migrate('/home/eric/Desktop/2008', db)

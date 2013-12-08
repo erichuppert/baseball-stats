@@ -1,6 +1,5 @@
 CREATE TABLE `game` (
   `id` CHAR(32),
-  `gameday_link` CHAR(32),
   `datetime` DATETIME NOT NULL,
   `day` CHAR(3),
   `league` CHAR(2),
@@ -43,19 +42,14 @@ CREATE TABLE `game` (
   `away_team_errors` INTEGER,
   `home_team_errors` INTEGER,
   `away_games_back_wildcard` FLOAT,
-  `home_preview_link` CHAR(100),
   `reason` CHAR(16),
   `tv_station` CHAR(16),
-  `away_preview_link` CHAR(100),
   `venue_id` INTEGER,
   `description` CHAR(100),
-  `mlbtv_link` CHAR(100),
-  `wrapup_link` CHAR(100),
   `resume_date` DATETIME,
   `series` CHAR(16),
   `series_num` INTEGER, 
-  `ser_games` INTEGER,
-  `postseason_tv_link` CHAR(100)
+  `ser_games` INTEGER
 );
 
 
