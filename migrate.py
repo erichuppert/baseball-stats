@@ -29,10 +29,14 @@ def migrate(directory, db):
 				date = gameAttribs["time_date"]
 			else:
 				date = id[:10] + " " + gameAttribs['time']
-			date = datetime.datetime.strptime(date, '%Y/%m/%d %I:%M')
+			try:
+				date = datetime.datetime.strptime(date, '%Y/%m/%d %I:%M')
+			except:
+				date = datetime.datetime.strptime(date[:10], '%Y/%m/%d') 	
 			if gameAttribs['ampm'] == 'PM':
 				date += datetime.timedelta(hours=12)
 			date = date.strftime('%Y-%m-%d %H:%M:%S')
+
 			day = gameAttribs.get("day", "null")
 			l = gameAttribs.get("league", "null")
 			gt = gameAttribs.get("game_type", "null")
@@ -91,7 +95,7 @@ def migrate(directory, db):
 			sg = gameAttribs.get("ser_games", "null")
 
 			gameSQL = """INSERT INTO game(id, datetime, day,
-			 league, game_type, home_division, away_division, gameday_sw, status,
+			 	league, game_type, home_division, away_division, gameday_sw, status,
 				ind, inning, outs, top_inning, away_code, home_code, away_team_id, 
 				home_team_id, away_name_abbrev,
 				home_name_abbrev, away_team_city, home_team_city, away_team_runs,
@@ -106,7 +110,7 @@ def migrate(directory, db):
 				series, series_num, ser_games) 
 				VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}',
 					'{10}','{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}',
-					'{19}','{20}','{21}','{22}','{23}','{24}','{25}','{26}','{27}',
+					'{19}','{20}','{21}','{22}','{23}','{24}','{25}','{26}',"{27}",
 					'{28}','{29}','{30}','{31}','{32}','{33}','{34}','{35}','{36}',
 					'{37}','{38}','{39}','{40}','{41}','{42}','{43}','{44}','{45}',
 					'{46}','{47}','{48}','{49}')""".format(id, date, day, l,\
@@ -344,6 +348,6 @@ def migrate(directory, db):
 
 if __name__ == "__main__":
 	db = MySQLdb.connect("localhost", "baseball", "baseball1", "baseball")
-	migrate('/media/eric/EHUPPERT700/SABR/mlb-database', db)
+	migrate('/home/eric/Projects/mlb-database', db)
 
 
