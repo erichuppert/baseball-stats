@@ -46,7 +46,6 @@ CREATE TABLE `game` (
   `tv_station` CHAR(16),
   `venue_id` INTEGER,
   `description` CHAR(100),
-  `resume_date` DATETIME,
   `series` CHAR(16),
   `series_num` INTEGER, 
   `ser_games` INTEGER

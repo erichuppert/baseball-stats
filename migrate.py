@@ -11,11 +11,11 @@ that MySQLdb python module is installed."""
 def migrate(directory, db):
 	cursor = db.cursor()
 	for root, dirs, filenames in os.walk(directory):
-		if not (len(dirs) == 0 and len(filenames) > 1):
+		if not (len(dirs) == 0 and len(filenames) > 2):
 			continue
 		game = ET.parse(root+'/linescore.xml').getroot()
 		gameAttribs = game.attrib
-		id = gameAttribs.get("id", "null")
+		id = gameAttribs['id']
 		print id
 		#check if the game is already in the database
 		checkSQL = "SELECT id FROM game WHERE id = '%s'"%(id)
@@ -30,6 +30,8 @@ def migrate(directory, db):
 			else:
 				date = id[:10] + " " + gameAttribs['time']
 			date = datetime.datetime.strptime(date, '%Y/%m/%d %I:%M')
+			if gameAttribs['ampm'] == 'PM':
+				date += datetime.timedelta(hours=12)
 			date = date.strftime('%Y-%m-%d %H:%M:%S')
 			day = gameAttribs.get("day", "null")
 			l = gameAttribs.get("league", "null")
@@ -58,7 +60,7 @@ def migrate(directory, db):
 			hl = gameAttribs.get("home_loss", "null")
 			ven = gameAttribs.get("venue", "null")
 			gpk = gameAttribs.get("game_pk", "null")
-			tz = gameAttribs.get("time_zone", "null")
+			tz = gameAttribs.get("home_time_zone", "null")
 			atn = gameAttribs.get("away_team_name", "null")
 			ali = gameAttribs.get("away_league_id", "null")
 			htn = gameAttribs.get("home_team_name", "null")
@@ -84,10 +86,6 @@ def migrate(directory, db):
 			tvs = gameAttribs.get("tv_station", "null")
 			vid = gameAttribs.get("venue_id", "null")
 			des = gameAttribs.get("description", "null")
-			rd = gameAttribs.get("resume_date", "null")
-			if rd != "null":
-				rd = datetime.datetime.strptime(rd, '%Y/%m/%d %I:%M')
-				rd = date.strftime('%Y-%m-%d %H:%M:%S')
 			ser = gameAttribs.get("series", "null")
 			sern = gameAttribs.get("series_num", "null")
 			sg = gameAttribs.get("ser_games", "null")
@@ -105,17 +103,17 @@ def migrate(directory, db):
 				home_team_hits, away_team_errors, home_team_errors, 
 				away_games_back_wildcard, reason, 
 				tv_station, venue_id, description, 
-				resume_date, series, series_num, ser_games) 
+				series, series_num, ser_games) 
 				VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}',
 					'{10}','{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}',
 					'{19}','{20}','{21}','{22}','{23}','{24}','{25}','{26}','{27}',
 					'{28}','{29}','{30}','{31}','{32}','{33}','{34}','{35}','{36}',
 					'{37}','{38}','{39}','{40}','{41}','{42}','{43}','{44}','{45}',
-					'{46}','{47}','{48}','{49}','{50}')""".format(id, date, day, l,\
+					'{46}','{47}','{48}','{49}')""".format(id, date, day, l,\
 					gt, hd, ad, gdsw, s, ind, inn, outs, ti, ac, hc, ati, hti, ana,\
 					hna, atc, htc, atr, htr, hw, hl, aw, al, ven, gpk, tz, atn, ali,\
 					htn, hli, agb, hgb, hgbw, vwc, ath, hth, ate, hte, agbw,\
-					reason, tvs, vid, des, rd, ser, sern, sg)
+					reason, tvs, vid, des, ser, sern, sg)
 
 			#mysql needs null without quotes, this simply removes the extra quotes
 			gameSQL = gameSQL.replace("'null'", "null")
@@ -147,7 +145,8 @@ def migrate(directory, db):
 						checkSQL = "SELECT num FROM atbat WHERE game_id='%s' and num='%s'"%(id, abnum)
 						cursor.execute(checkSQL)
 						if cursor.fetchall():
-							print "atbat already in database"
+							if verbose:
+								print "atbat already in database"
 							pass
 						else:
 							b = atbatAttribs.get('b', 'null')
@@ -208,7 +207,7 @@ def migrate(directory, db):
 									des = pitchAttribs.get('des', 'null')
 									ptype = pitchAttribs.get('type', 'null')
 									abstfsz = pitchAttribs.get('tfs_zulu', 'null')
-									if abstfsz != "" and abstfsz == 'null':
+									if abstfsz != "" and abstfsz != 'null':
 										dt = datetime.datetime.strptime(abstfsz, '%Y-%m-%dT%H:%M:%SZ')
 										dt = dt.strftime('%Y-%m-%d %H:%M:%S')
 									else:
@@ -216,7 +215,7 @@ def migrate(directory, db):
 									x = pitchAttribs.get('x', 'null')
 									y = pitchAttribs.get('y', 'null')
 									mt = pitchAttribs.get('mt', 'null')
-									if mt:
+									if mt and verbose:
 										print 'mt not None for pitch', pitchid
 									first = pitchAttribs.get('on_1b', 'null')
 									second = pitchAttribs.get('on_2b', 'null')
@@ -345,4 +344,6 @@ def migrate(directory, db):
 
 if __name__ == "__main__":
 	db = MySQLdb.connect("localhost", "baseball", "baseball1", "baseball")
-	migrate('/home/eric/Desktop/2008', db)
+	migrate('/media/eric/EHUPPERT700/SABR/mlb-database', db)
+
+
