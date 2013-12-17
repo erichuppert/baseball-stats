@@ -108,19 +108,19 @@ def migrate(directory, db):
 				away_games_back_wildcard, reason, 
 				tv_station, venue_id, description, 
 				series, series_num, ser_games) 
-				VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}',
-					'{10}','{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}',
-					'{19}','{20}','{21}','{22}','{23}','{24}','{25}','{26}',"{27}",
-					'{28}','{29}','{30}','{31}','{32}','{33}','{34}','{35}','{36}',
-					'{37}','{38}','{39}','{40}','{41}','{42}','{43}','{44}','{45}',
-					'{46}','{47}','{48}','{49}')""".format(id, date, day, l,\
+				VALUES ("{0}","{1}","{2}","{3}","{4}","{5}","{6}","{7}","{8}","{9}",
+					"{10}","{11}","{12}","{13}","{14}","{15}","{16}","{17}","{18}",
+					"{19}","{20}","{21}","{22}","{23}","{24}","{25}","{26}","{27}",
+					"{28}","{29}","{30}","{31}","{32}","{33}","{34}","{35}","{36}",
+					"{37}","{38}","{39}","{40}","{41}","{42}","{43}","{44}","{45}",
+					"{46}","{47}","{48}","{49}")""".format(id, date, day, l,\
 					gt, hd, ad, gdsw, s, ind, inn, outs, ti, ac, hc, ati, hti, ana,\
 					hna, atc, htc, atr, htr, hw, hl, aw, al, ven, gpk, tz, atn, ali,\
 					htn, hli, agb, hgb, hgbw, vwc, ath, hth, ate, hte, agbw,\
 					reason, tvs, vid, des, ser, sern, sg)
 
 			#mysql needs null without quotes, this simply removes the extra quotes
-			gameSQL = gameSQL.replace("'null'", "null")
+			gameSQL = gameSQL.replace('"null"', "null")
 			if verbose:
 				print gameSQL
 			try:
@@ -348,6 +348,6 @@ def migrate(directory, db):
 
 if __name__ == "__main__":
 	db = MySQLdb.connect("localhost", "baseball", "baseball1", "baseball")
-	migrate('/home/eric/Projects/mlb-database', db)
+	migrate('/home/eric/Desktop', db)
 
 
