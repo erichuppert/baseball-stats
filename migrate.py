@@ -323,18 +323,30 @@ def migrate(directory, db):
 			for player in players:
 				playerAttribs = player.attrib
 				playerid = playerAttribs['id']
-				checkSQL = "SELECT id FROM player WHERE id='%s' and team='%s'"%(playerid, playerteam)
+				checkSQL = "SELECT id FROM player WHERE id='%s'"%(playerid)
 				cursor.execute(checkSQL)
 				if not cursor.fetchone():
-					teamid = playerAttribs.get('team_id', 'null')
+					# teamid = playerAttribs.get('team_id', 'null')
 					first = playerAttribs.get('first', 'null')
 					last = playerAttribs.get('last', 'null')
 					position = playerAttribs.get('position', 'null')
-					rl = playerAttribs.get('rl', 'null')
-
+					if position
+					checkBatsSQL = "SELECT DISTINCT stand FROM atbat WHERE batter='%s'"%(playerid)
+					cursor.execute(checkBatsSQL)
+					batHands = cursor.fetchall()
+					if len(batHands) == 2:
+						bats = 'S'
+					else:
+						bats = batHands[0]
+					checkThrowsSQL = "SELECT DISTINCT p_throws from atbat WHERE pitcher='%s' LIMIT 1"%(playerid)
+					cursor.execute(checkThrowsSQL)
+					pitchHands = cursor.fetchall()
+					throws = pitchHands[0]
+					# rls will be right/left/switch if its fast enough 
+					
 					playerSQL="""INSERT INTO player(id, first, last, rl, position,
 						team, team_id) VALUES("{0}","{1}","{2}","{3}","{4}","{5}",
-						"{6}")""".format(playerid, first, last, rl, position,\
+						"{6}")""".format(playerid, first, last, rls, position,\
 						playerteam, teamid)
 					playerSQL = playerSQL.replace('"null"', "null")
 					try:

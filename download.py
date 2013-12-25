@@ -76,7 +76,7 @@ class Game:
 			box.close()	
 		self.gameType = gameAttribList['game_type']
 
-		if self.gameType not in ['R', 'P', 'D', 'L', 'W']:
+		if self.gameType not in ['R', 'P', 'D', 'L', 'W', 'F']:
 			raise Exception('This is not a regular season game')
 
 
