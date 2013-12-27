@@ -13,6 +13,7 @@ def migrate(directory, db):
 	for root, dirs, filenames in os.walk(directory):
 		if not (len(dirs) == 0 and len(filenames) > 2):
 			continue
+		print root
 		game = ET.parse(root+'/linescore.xml').getroot()
 		gameAttribs = game.attrib
 		id = gameAttribs['id']
@@ -96,7 +97,7 @@ def migrate(directory, db):
 
 			gameSQL = """INSERT INTO game(id, datetime, day,
 			 	league, game_type, home_division, away_division, gameday_sw, status,
-				ind, inning, outs, top_inning, away_code, home_code, away_team_id, 
+				ind, inning, outs, top_inning, away_team, home_team, away_team_id, 
 				home_team_id, away_name_abbrev,
 				home_name_abbrev, away_team_city, home_team_city, away_team_runs,
 				home_team_runs, home_win, home_loss,
@@ -284,38 +285,37 @@ def migrate(directory, db):
 										balls += 1
 									elif ptype not in "SXB":
 										print 'pitch', str(pitchid), 'from game', str(id), 'has type', str(ptype)
-							# if event.tag == 'runner':
-							# 	#do all of the runner attribute stuff
-							# 	runnerAttribs = event.attrib
-							# 	runnerid = runnerAttribs['id']
-							# 	checkSQL = "SELECT id FROM runner WHERE game_id='%s' and atbat_num ='%s' and id='%s'"%(id, abnum, runnerid)
-							# 	cursor.execute(checkSQL)
-							# 	if cursor.fetchone():
-							# 		"runner already in databse"
-							# 	else:
-							# 		start = runnerAttribs.get('start', 'null')
-							# 		end = runnerAttribs.get('end', 'null')
-							# 		event = runnerAttribs.get('event', 'null')
-							# 		score = runnerAttribs.get('score', 'null')
-							# 		rbi = runnerAttribs.get('rbi', 'null')
-							# 		earned = runnerAttribs.get('earned', 'null')
-							# 		runnerSQL = """INSERT INTO runner(id, start, end,
-							# 			event, score, rbi, earned, game_id, atbat_num)
-							# 			VALUES('{0}','{1}','{2}','{3}','{4}','{5}',
-							# 			'{6}','{7}','{8}')""".format(runnerid, start,\
-							# 			end, event, score, rbi, earned, id, abnum)
-							# 		print runnerSQL
+							if event.tag == 'runner':
+								#do all of the runner attribute stuff
+								runnerAttribs = event.attrib
+								runnerid = runnerAttribs['id']
+								checkSQL = "SELECT id FROM runner WHERE game_id='%s' and atbat_num ='%s' and id='%s'"%(id, abnum, runnerid)
+								cursor.execute(checkSQL)
+								if cursor.fetchone():
+									"runner already in databse"
+								else:
+									start = runnerAttribs.get('start', 'null')
+									end = runnerAttribs.get('end', 'null')
+									event = runnerAttribs.get('event', 'null')
+									score = runnerAttribs.get('score', 'null')
+									rbi = runnerAttribs.get('rbi', 'null')
+									earned = runnerAttribs.get('earned', 'null')
+									runnerSQL = """INSERT INTO runner(id, start, end,
+										event, score, rbi, earned, game_id, atbat_num)
+										VALUES('{0}','{1}','{2}','{3}','{4}','{5}',
+										'{6}','{7}','{8}')""".format(runnerid, start,\
+										end, event, score, rbi, earned, id, abnum)
+									print runnerSQL
 
-							# 		runnerSQL.replace("'null'", "null")
-							# 		try:
-							# 			cursor.execute(runnerSQL)
-							# 			db.commit()
-							# 		except:
-							# 			db.rollback()
-							# 			raise
+									runnerSQL.replace("'null'", "null")
+									try:
+										cursor.execute(runnerSQL)
+										db.commit()
+									except:
+										db.rollback()
+										raise
 		
 		playerlist = ET.parse(root+'/players.xml').getroot()
-		date = datetime.datetime.strptime(playerlist.attrib['date'], '%B %d, %Y')
 		teams = [t for t in playerlist.getchildren() if t.tag == 'team']
 		for team in teams:
 			playerteam = team.attrib['id']
@@ -329,25 +329,30 @@ def migrate(directory, db):
 					# teamid = playerAttribs.get('team_id', 'null')
 					first = playerAttribs.get('first', 'null')
 					last = playerAttribs.get('last', 'null')
-					position = playerAttribs.get('position', 'null')
-					if position
 					checkBatsSQL = "SELECT DISTINCT stand FROM atbat WHERE batter='%s'"%(playerid)
 					cursor.execute(checkBatsSQL)
 					batHands = cursor.fetchall()
-					if len(batHands) == 2:
+					if ('R',) in batHands and ('L',) in batHands:
 						bats = 'S'
+					elif ('R',) in batHands:
+						bats = 'R'
+					elif ('L',) in batHands:
+						bats = 'L'
 					else:
-						bats = batHands[0]
+						bats = 'null'
 					checkThrowsSQL = "SELECT DISTINCT p_throws from atbat WHERE pitcher='%s' LIMIT 1"%(playerid)
 					cursor.execute(checkThrowsSQL)
 					pitchHands = cursor.fetchall()
-					throws = pitchHands[0]
-					# rls will be right/left/switch if its fast enough 
+					if ('L',) in pitchHands:
+						throws = 'L'
+					elif ('R',) in pitchHands:
+						throws = 'R'
+					else:
+						throws='null'
 					
-					playerSQL="""INSERT INTO player(id, first, last, rl, position,
-						team, team_id) VALUES("{0}","{1}","{2}","{3}","{4}","{5}",
-						"{6}")""".format(playerid, first, last, rls, position,\
-						playerteam, teamid)
+					playerSQL="""INSERT INTO player(id, first, last, bats, throws)
+						VALUES("{0}","{1}","{2}","{3}","{4}"
+						)""".format(playerid, first, last, bats, throws)
 					playerSQL = playerSQL.replace('"null"', "null")
 					try:
 						cursor.execute(playerSQL)
@@ -360,6 +365,6 @@ def migrate(directory, db):
 
 if __name__ == "__main__":
 	db = MySQLdb.connect("localhost", "baseball", "baseball1", "baseball")
-	migrate('/home/eric/Desktop', db)
+	migrate('/media/eric/EHUPPERT700/SABR/mlb-database', db)
 
 
