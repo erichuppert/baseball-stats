@@ -12,8 +12,8 @@ CREATE TABLE `game` (
   `inning` INTEGER,
   `outs` INTEGER,
   `top_inning` CHAR(1),
-  `away_code` CHAR(3),
-  `home_code` CHAR(3),
+  `away_team` CHAR(3),
+  `home_team` CHAR(3),
   `away_team_id` INTEGER,
   `home_team_id` INTEGER,
   `away_name_abbrev` CHAR(3),
@@ -48,7 +48,8 @@ CREATE TABLE `game` (
   `description` CHAR(100),
   `series` CHAR(16),
   `series_num` INTEGER, 
-  `ser_games` INTEGER
+  `ser_games` INTEGER,
+  PRIMARY KEY (id)
 );
 
 
@@ -94,7 +95,7 @@ CREATE TABLE pitch (
    balls INTEGER,
    strikes INTEGER,
    atbat_num INTEGER NOT NULL,
-   game_id CHAR(32) NOT NULL
+   game_id CHAR(32) NOT NULL,
 );
 
 CREATE TABLE atbat (
@@ -115,18 +116,20 @@ CREATE TABLE atbat (
    away_team_runs INTEGER,
    event CHAR(128),
    inning INTEGER NOT NULL,
-   inning_half  CHAR(1) NOT NULL
+   inning_half  CHAR(1) NOT NULL,
+   UNIQUE INDEX id (game_id, num),
+   INDEX (batter),
+   INDEX (pitcher)
 );
 
 CREATE TABLE player (
-
-        id INTEGER,
+        id INTEGER NOT NULL,
         first CHAR(20),
         last CHAR(20),
-        rl CHAR(1),
-        position CHAR(2),
-        team CHAR(3),
-        team_id INTEGER       
+        bats CHAR(1),
+        throws CHAR(1),
+        PRIMARY KEY (id),
+        INDEX name (last, first)
 );
         
   /*CREATE TABLE umpire (
