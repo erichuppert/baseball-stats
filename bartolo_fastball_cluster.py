@@ -27,4 +27,4 @@ pitches=cursor.fetchall()
 
 ms = MeanShift()
 pitches = numpy.array([list(pitch) for pitch in pitches])
-ms.fit(pitches)
+ms.fit(featureVectors)
