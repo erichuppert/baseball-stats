@@ -11,19 +11,19 @@ GAME_LOG_XML = False
 GAME_LOG_JSON = False
 RAW_BOXSCORE = False
 PLAYERS = True
-#BATTERS = False
-#PITCHERS = False
 
 VERBOSE = False
 
-#
 DOWNLOAD_DIRECTORY = "/media/eric/EHUPPERT700/SABR/mlb-database"
+MLB_URL = "http://gd2.mlb.com/components/game/mlb"
 
 import urllib
 import xml.etree.ElementTree as ET
 import datetime
 import contextlib
 import os
+import json
+import requests
 
 class Game(object):
     """
@@ -42,43 +42,34 @@ class Game(object):
         if datetime.datetime.now() < datetime.datetime(self.year, self.month, self.day):
             raise Exception('Date of given game (' + id + ') is after current date')
 
+        uri_suffix = "year_{}/month_{}/day_{}/{}".format(
+            self.year, formattedDate(self.month), formattedDate(self.day), mlb_game_id
+        )
+        self.local_dir = "{}/{}/month".format(DOWNLOAD_DIRECTORY, uri_suffix)
+        self.base_url = "{}/{}".format(MLB_URL, uri_suffix)
 
+        linescore_response = requests.get(self.base_url + '/linescore.json')
+        if linescore_response.status_code == 404:
+            raise Exception('Game {} does not exist.'.format(mlb_game_id))
+        if linescore_response.status_code != 200:
+            raise Exception('Got response code of {} for game {}'.format(
+                linescore_response.status_code, mlb_game_id))
 
-        self.local_dir = "{}/{}/month_{}/day_{}/{}".format(
-            DOWNLOAD_DIRECTORY, self.year, formattedDate(self.month), formattedDate(self.day), id)
+        linescore = linescore_response.json()
+        try:
+            self.innings = int(linescore['data']['game']['inning'])
+        except (KeyError, ValueError):
+            raise Exception('cannot parse information from linescore file for game {}'
+                            .format(mlb_game_id))
 
-        # if game can't be found in the download directory or on the internet, raise exception
-        if not os.path.exists(self.local_dir) and urllib.urlopen(self.baseURL).getcode() == 404:
-            raise Exception('Cannot find the file for this game in your local directory or on the' +
-                            ' internet. Check your connection and/or if this game exists.')
+        game_type = linescore['data']['game']['game_type']
+        # ensure that we are not getting a spring training or exhibition game
+        if game_type not in ['R', 'P', 'D', 'L', 'W', 'F']:
+            raise Exception('Game {} is not a regular season game'.format(mlb_game_id))
 
         if not os.path.exists(self.local_dir):
             os.makedirs(self.local_dir)
 
-        game_attributes_file = urllib.urlopen(self.base_url + '/linescore.xml')
-        game_attributes = ET.parse(game_attributes_file).getroot().attrib
-        game_attributes_file.close()
-
-        if 'inning' in game_attributes:
-            try:
-                self.innings = int(game_attributes['inning'])
-            except ValueError:
-                inn = 1
-                while urllib.urlopen(self.baseURL + "/inning/inning_"+str(inn)+".xml").getcode() == 200:
-                    inn += 1
-
-                self.innings = inn-1
-        else:
-            box = urllib.urlopen(self.baseURL + "/boxscore.xml")
-            boxRoot = ET.parse(box).getroot()
-            for i in boxRoot.iter():
-                if i.tag == 'inning_line_score':
-                    self.innings = int(i.attrib['inning'])
-            box.close()
-        self.gameType = game_attributes['game_type']
-
-        if self.gameType not in ['R', 'P', 'D', 'L', 'W', 'F']:
-            raise Exception('This is not a regular season game')
 
 
     def getStatus(self):
@@ -89,30 +80,27 @@ class Game(object):
         return root.attrib["status"]
 
     def getAllFiles(self):
-        if self.getStatus() == 'Final' or self.getStatus() == 'Completed Early':
-            if innings_all:
-                self.getInningsAll()
-            if highlights and self.year >= 2008:
-                self.getHighlights()
-            if game_events and self.year >= 2008:
-                self.getGameEvents()
-            if linescore_xml:
-                self.getLinescoreXML()
-            if linescore_json and self.year >= 2007:
-                self.getLinescoreJSON()
-            if box_score_xml:
-                self.getBoxscoreXML()
-            if box_score_json and self.year >= 2013:
-                self.getBoxscoreJSON()
-            if event_log and self.year >= 2007:
-                self.getEventLog()
-            if raw_boxscore and self.year >= 2011:
-                self.getRawBoxscore()
-            if players:
-                self.getPlayers()
+        if INNINGS_ALL:
+            self.getInningsAll()
+        if HIGHLIGHTS and self.year >= 2008:
+            self.getHighlights()
+        if GAME_EVENTS and self.year >= 2008:
+            self.getGameEvents()
+        if LINESCORE_XML:
+            self.getLinescoreXML()
+        if LINESCORE_JSON and self.year >= 2007:
+            self.getLinescoreJSON()
+        if BOX_SCORE_XML:
+            self.getBoxscoreXML()
+        if BOX_SCORE_JSON and self.year >= 2013:
+            self.getBoxscoreJSON()
+        if EVENT_LOG and self.year >= 2007:
+            self.getEventLog()
+        if RAW_BOXSCORE and self.year >= 2011:
+            self.getRawBoxscore()
+        if PLAYERS:
+            self.getPlayers()
 
-        else:
-            print "This game is in progress or was not scored as an official game; will not get files."
 
     def getInningsAll(self):
         dest = self.local_dir + "/innings_all.xml"
@@ -124,8 +112,8 @@ class Game(object):
                     data = urllib.urlopen(inningURL).read()
                     outStr += data
                 outStr += "</game>"
-                outFile = open(dest, 'wb')
-                outFile.write(outStr)
+                with open(dest, 'wb') as outFile:
+                    outFile.write(outStr)
             else:
                 src = self.baseURL + "/inning/inning_all.xml"
                 urllib.urlretrieve(src, dest)
@@ -304,25 +292,25 @@ def update(start = datetime.date(2006,3,23), end = datetime.date.today()):
 #check to see if all desired for a list of games has been downloaded. Returns a boolean value.
 def hasAllFiles(games):
     for game in games:
-        if innings_all and not(os.path.isfile(game.localDir + "/innings_all.xml")):
+        if INNINGS_ALL and not(os.path.isfile(game.localDir + "/innings_all.xml")):
             return False
-        if highlights and not(os.path.isfile(game.localDir + "/highlights.xml")):
+        if HIGHLIGHTS and not(os.path.isfile(game.localDir + "/highlights.xml")):
             return False
-        if game_events and not(os.path.isfile(game.localDir + "/game_events.xml")):
+        if GAME_EVENTS and not(os.path.isfile(game.localDir + "/game_events.xml")):
             return False
-        if linescore_xml and not(os.path.isfile(game.localDir + "/linescore.xml")):
+        if LINESCORE_XML and not(os.path.isfile(game.localDir + "/linescore.xml")):
             return False
-        if linescore_json and game.year >= 2007 and not(os.path.isfile(game.localDir + "/linescore.json")):
+        if LINESCORE_JSON and game.year >= 2007 and not(os.path.isfile(game.localDir + "/linescore.json")):
             return False
-        if box_score_xml and not(os.path.isfile(game.localDir + "/boxscore.xml")):
+        if BOX_SCORE_XML and not(os.path.isfile(game.localDir + "/boxscore.xml")):
             return False
-        if box_score_json and game.year >= 2013 and not (os.path.isfile(game.localDir + "/boxscore.json")):
+        if BOX_SCORE_JSON and game.year >= 2013 and not (os.path.isfile(game.localDir + "/boxscore.json")):
             return False
-        if event_log and game.year >= 2007 and not (os.path.isfile(game.localDir + "/eventLog.xml")):
+        if EVENT_LOG and game.year >= 2007 and not (os.path.isfile(game.localDir + "/eventLog.xml")):
             return False
-        if raw_boxscore and game.year >= 2011 and not (os.path.isfile(game.localDir + "/rawboxscore.xml")):
+        if RAW_BOXSCORE and game.year >= 2011 and not (os.path.isfile(game.localDir + "/rawboxscore.xml")):
             return False
-        if players and not (os.path.isfile(game.localDir + "/players.xml")):
+        if players AND not (os.path.isfile(game.localDir + "/players.xml")):
             return False
         return True
 
