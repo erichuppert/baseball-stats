@@ -1,2 +1,6 @@
-./files/
-*.pyc
+# Ignore everything
+*
+
+# But not these files...
+!.gitignore
+!download.py
