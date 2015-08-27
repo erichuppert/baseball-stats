@@ -21,9 +21,7 @@ MLB_URL = "http://gd2.mlb.com/components/game/mlb"
 import urllib
 import xml.etree.ElementTree as ET
 import datetime
-import contextlib
 import os
-import json
 import requests
 
 class Game(object):
@@ -74,7 +72,7 @@ class Game(object):
 
     def get_all_files(self):
         if INNINGS_ALL:
-            self.getInningsAll()
+            self.download_innings_all_file()
         if HIGHLIGHTS and self.year >= 2008:
             self.getHighlights()
         if GAME_EVENTS and self.year >= 2008:
@@ -102,18 +100,19 @@ class Game(object):
             response.raise_for_status()
             with open(local_file_path, 'wb') as local_file:
                 for chunk in response.iter_content(chunk_size=1024):
-                    if chunk: # filter out keep-alive new chunks
+                    if chunk:  # filter out keep-alive new chunks
                         local_file.write(chunk)
                         local_file.flush()
 
-
-    def getInningsAll(self):
+    def download_innings_all_file(self):
         dest = self.local_dir + "/innings_all.xml"
         if not os.path.isfile(dest):
             if self.year <= 2007:
                 outStr = "<game>"
                 for i in range(self.innings):
-                    inningURL = self.baseURL + "/inning/inning_" + str(i+1) + ".xml"
+                    inning_url = "{}/inning/innging{}.xml".format(self.base_url, str(i+1))
+                    response = requests.get(inning_url)
+                    response.raise_for_status()
                     data = urllib.urlopen(inningURL).read()
                     outStr += data
                 outStr += "</game>"
@@ -306,7 +305,7 @@ def hasAllFiles(games):
             return False
         if RAW_BOXSCORE and game.year >= 2011 and not (os.path.isfile(game.localDir + "/rawboxscore.xml")):
             return False
-        if players AND not (os.path.isfile(game.localDir + "/players.xml")):
+        if players and not (os.path.isfile(game.localDir + "/players.xml")):
             return False
         return True
 
