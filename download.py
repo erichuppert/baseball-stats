@@ -11,6 +11,7 @@ GAME_LOG_XML = False
 GAME_LOG_JSON = False
 RAW_BOXSCORE = False
 PLAYERS = True
+OVERRIGHT_EXISTING_FILES = False
 
 VERBOSE = False
 
@@ -39,8 +40,9 @@ class Game(object):
         self.day = int(id[12:14])
         self.game_number = int(id[-1])
 
-        if datetime.datetime.now() < datetime.datetime(self.year, self.month, self.day):
-            raise Exception('Date of given game (' + id + ') is after current date')
+        if datetime.datetime.now() < datetime.datetime(self.year, self.month,
+                                                       self.day):
+            raise Exception('Date of given game (' + mlb_game_id + ') is after current date')
 
         uri_suffix = "year_{}/month_{}/day_{}/{}".format(
             self.year, formattedDate(self.month), formattedDate(self.day), mlb_game_id
@@ -70,16 +72,7 @@ class Game(object):
         if not os.path.exists(self.local_dir):
             os.makedirs(self.local_dir)
 
-
-
-    def getStatus(self):
-        f = urllib.urlopen(self.linescore_file)
-        tree = ET.parse(f)
-        root = tree.getroot()
-        f.close()
-        return root.attrib["status"]
-
-    def getAllFiles(self):
+    def get_all_files(self):
         if INNINGS_ALL:
             self.getInningsAll()
         if HIGHLIGHTS and self.year >= 2008:
@@ -101,6 +94,18 @@ class Game(object):
         if PLAYERS:
             self.getPlayers()
 
+    @staticmethod
+    def download_file(file_url, local_file_path, minimum_year=0):
+        file_exists = os.path.isfile(local_file_path)
+        if not file_exists or OVERRIGHT_EXISTING_FILES:
+            response = requests.get(file_url)
+            response.raise_for_status()
+            with open(local_file_path, 'wb') as local_file:
+                for chunk in response.iter_content(chunk_size=1024):
+                    if chunk: # filter out keep-alive new chunks
+                        local_file.write(chunk)
+                        local_file.flush()
+
 
     def getInningsAll(self):
         dest = self.local_dir + "/innings_all.xml"
@@ -116,27 +121,18 @@ class Game(object):
                     outFile.write(outStr)
             else:
                 src = self.baseURL + "/inning/inning_all.xml"
-                urllib.urlretrieve(src, dest)
-        elif verbose:
-            print "innings_all.xml file for " + self.id + " is already downloaded"
+                this.download_file(src, dest)
 
     def getHighlights(self):
         dest = self.local_dir + "/highlights.xml"
         src = self.baseURL + "/media/highlights.xml"
-        if not os.path.isfile(dest):
-            if self.year <= 2007:
-                return
-            elif urllib.urlopen(src).getcode() == 404:
-                print "Highlights are not available for " + self.id
-            else:
-                urllib.urlretrieve(src, dest)
-        elif verbose:
-                print "highlights.xml file for " + self.id + " is already downloaded"
+        self.download_file(src, dest, minimum_year=2008)
 
 
     def getGameEvents(self):
         src = self.baseURL + "/game_events.xml"
         dest = self.local_dir + "/game_events.xml"
+        self.download_file(src, dest, minimum_year=2008)
         if not os.path.isfile(dest):
             if self.year == 2007:
                 print "game_events.xml is not available for games before"
