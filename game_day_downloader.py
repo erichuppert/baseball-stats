@@ -48,38 +48,3 @@ class GameDayDownloader(object):
         """
         for game in self.games:
             game.download_all_files()
-
-#takes range of years as argument, downloads selected files
-def getFiles(years):
-    now = datetime.date.today()
-    if 2007 in years or 2006 in years and highlights:
-        print "highlights do not exist for years before 2008"
-    for year in years:
-        currentDate = datetime.date(year, 3, 23)
-        endDate = min([now - datetime.timedelta(days=1), datetime.date(year, 12, 1)])
-        while currentDate < endDate:
-            print currentDate
-            games = getGames(year, currentDate.month, currentDate.day)
-            for game in games:
-                if verbose:
-                    print game.id
-                game.getAllFiles()
-            currentDate
-
-#checks what you already have downloaded and then downloads missing files over given range
-def update(start = datetime.date(2006,3,23), end = datetime.date.today()):
-    now = datetime.date.today()
-    currentDate = end
-    while currentDate >= start: #and not hasAllFiles(getGames(currentDate.year, currentDate.month, currentDate.day)):
-        print currentDate
-        games = getGames(currentDate.year, currentDate.month, currentDate.day)
-        for game in games:
-            if verbose:
-                print game
-            game.getAllFiles()
-        if currentDate.day == 23 and currentDate.month == 3:
-            currentDate = datetime.date(currentDate.year-1, 11, 5)
-        else:
-            currentDate -= datetime.timedelta(days=1)
-
-#update(end = datetime.date(2006,7,7))
