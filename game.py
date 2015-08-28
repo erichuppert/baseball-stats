@@ -76,24 +76,22 @@ class Game(object):
         """
         if INNINGS_ALL:
             self.download_innings_all_file()
-        if HIGHLIGHTS and self.year >= 2008:
-            self.getHighlights()
-        if GAME_EVENTS and self.year >= 2008:
-            self.getGameEvents()
+        if HIGHLIGHTS:
+            self.download_highlights_file()
+        if GAME_EVENTS:
+            self.download_game_events_file()
         if LINESCORE_XML:
-            self.getLinescoreXML()
-        if LINESCORE_JSON and self.year >= 2007:
-            self.getLinescoreJSON()
+            self.download_linescore_xml()
+        if LINESCORE_JSON:
+            self.download_linescore_json()
         if BOX_SCORE_XML:
-            self.getBoxscoreXML()
-        if BOX_SCORE_JSON and self.year >= 2013:
-            self.getBoxscoreJSON()
-        if EVENT_LOG and self.year >= 2007:
-            self.getEventLog()
-        if RAW_BOXSCORE and self.year >= 2011:
-            self.getRawBoxscore()
+            self.download_boxscore_xml()
+        if BOX_SCORE_JSON:
+            self.download_boxscore_json()
+        if RAW_BOXSCORE:
+            self.download_raw_boxscore_file()
         if PLAYERS:
-            self.getPlayers()
+            self.download_players_file()
 
     def download_file(self, file_url, local_file_path, minimum_year=0):
         """
@@ -102,7 +100,7 @@ class Game(object):
         less than minimum_year. This optional value should be used when some file type was not
         in existance for some year
         """
-        if self.year < minimum_year:
+        if self.date.year < minimum_year:
             return
         file_exists = os.path.isfile(local_file_path)
         if file_exists or not OVERRIGHT_EXISTING_FILES:
@@ -126,7 +124,7 @@ class Game(object):
         """
         dest = self.local_dir + "/innings_all.xml"
         if not os.path.isfile(dest):
-            if self.year < 2008:
+            if self.date.year < 2008:
                 full_xml = "<game>"
                 for i in range(self.innings):
                     inning_url = "{}/inning/innging{}.xml".format(self.base_url, str(i+1))
@@ -201,7 +199,7 @@ class Game(object):
         dest = self.local_dir + "/boxscore.json"
         self.download_file(src, dest)
 
-    def download_raw_boxscore(self):
+    def download_raw_boxscore_file(self):
         """
         Downloads the raw boxscore file
         """
