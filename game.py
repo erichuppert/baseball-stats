@@ -18,8 +18,6 @@ VERBOSE = False
 DOWNLOAD_DIRECTORY = "/media/eric/EHUPPERT700/SABR/mlb-database"
 MLB_URL = "http://gd2.mlb.com/components/game/mlb"
 
-import urllib
-import xml.etree.ElementTree as ET
 from datetime import date
 import os
 import requests
@@ -206,62 +204,3 @@ class Game(object):
         src = self.base_url + "/rawboxscore.xml"
         dest = self.local_dir + "/rawboxscore.xml"
         self.download_file(src, dest, minimum_year=2012)
-
-
-#returns a list of all game objects for a given day
-def getGames(year, month, day):
-    masterScoreboardURL = "http://gd2.mlb.com/components/game/mlb/year_" + str(year) + "/month_" + formattedDate(month) + "/day_" + formattedDate(day) + "/master_scoreboard.xml"
-    masterScoreboard = urllib.urlopen(masterScoreboardURL)
-    if masterScoreboard.getcode() == 404:
-        print "There is no master scoreboard for " + str(month) + "/" + str(day) + "/" + str(year) + " URL: " + masterScoreboardURL
-        print masterScoreboardURL
-        return []
-    tree = ET.parse(masterScoreboard)
-    root = tree.getroot()
-    gameList = []
-    masterScoreboard.close()
-    for child in root:
-        id = "gid_" + str(year) + "_" + formattedDate(month) + "_" + formattedDate(day) + "_" + child.attrib['id'][11:].replace("-", "_")
-
-        try:
-            gameList.append(Game(id))
-
-        except Exception as exc:
-            print exc
-            continue
-    return gameList
-
-#takes range of years as argument, downloads selected files
-def getFiles(years):
-    now = datetime.date.today()
-    if 2007 in years or 2006 in years and highlights:
-        print "highlights do not exist for years before 2008"
-    for year in years:
-        currentDate = datetime.date(year, 3, 23)
-        endDate = min([now - datetime.timedelta(days=1), datetime.date(year, 12, 1)])
-        while currentDate < endDate:
-            print currentDate
-            games = getGames(year, currentDate.month, currentDate.day)
-            for game in games:
-                if verbose:
-                    print game.id
-                game.getAllFiles()
-            currentDate
-
-#checks what you already have downloaded and then downloads missing files over given range
-def update(start = datetime.date(2006,3,23), end = datetime.date.today()):
-    now = datetime.date.today()
-    currentDate = end
-    while currentDate >= start: #and not hasAllFiles(getGames(currentDate.year, currentDate.month, currentDate.day)):
-        print currentDate
-        games = getGames(currentDate.year, currentDate.month, currentDate.day)
-        for game in games:
-            if verbose:
-                print game
-            game.getAllFiles()
-        if currentDate.day == 23 and currentDate.month == 3:
-            currentDate = datetime.date(currentDate.year-1, 11, 5)
-        else:
-            currentDate -= datetime.timedelta(days=1)
-
-#update(end = datetime.date(2006,7,7))
