@@ -26,6 +26,7 @@ class Game(object):
     """
     Game instance represents a single MLB game.
     """
+
     def __init__(self, mlb_game_id):
         """
         id has the format gid_2015_08_24_oakmlb_seamlb_1
@@ -145,7 +146,6 @@ class Game(object):
         src = self.base_url + "/media/highlights.xml"
         self.download_file(src, dest, minimum_year=2008)
 
-
     def download_game_events_file(self):
         """
         Downloads the game events file, which contains play by play information about the game
@@ -170,7 +170,6 @@ class Game(object):
         src = self.base_url + "/players.xml"
         dest = self.local_dir + "/players.xml"
         self.download_file(src, dest)
-
 
     def download_linescore_json(self):
         """
