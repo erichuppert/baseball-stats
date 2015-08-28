@@ -3,5 +3,6 @@
 
 # But not these files...
 !.gitignore
-!game.py
+!game_downloader.py
+!game_day_downloader.py
 !README.md

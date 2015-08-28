@@ -1,28 +1,11 @@
-####Settings####
-INNINGS_ALL = True
-HIGHLIGHTS = True
-GAME_EVENTS = False
-LINESCORE_XML = True
-LINESCORE_JSON = False
-BOX_SCORE_XML = False
-BOX_SCORE_JSON = False
-EVENT_LOG = False
-GAME_LOG_XML = False
-GAME_LOG_JSON = False
-RAW_BOXSCORE = False
-PLAYERS = True
-OVERRIGHT_EXISTING_FILES = False
-
-VERBOSE = False
-
-DOWNLOAD_DIRECTORY = "/media/eric/EHUPPERT700/SABR/mlb-database"
-MLB_URL = "http://gd2.mlb.com/components/game/mlb"
-
 from datetime import date
 import os
 import requests
 
-class Game(object):
+DOWNLOAD_DIRECTORY = "/media/eric/EHUPPERT700/SABR/mlb-database"
+MLB_URL = "http://gd2.mlb.com/components/game/mlb"
+
+class GameDownloader(object):
     """
     Game instance represents a single MLB game.
     """
