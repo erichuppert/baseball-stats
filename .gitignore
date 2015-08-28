@@ -3,5 +3,5 @@
 
 # But not these files...
 !.gitignore
-!download.py
+!game.py
 !README.md
