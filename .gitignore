@@ -5,4 +5,5 @@
 !.gitignore
 !game_downloader.py
 !game_day_downloader.py
+!tables.sql
 !README.md
